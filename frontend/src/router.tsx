@@ -32,18 +32,10 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function LandingOrDashboard() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  return <LandingPage />;
-}
-
 export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <LandingOrDashboard />,
+    element: <LandingPage />,
   },
   {
     path: '/login',
