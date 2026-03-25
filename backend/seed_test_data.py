@@ -7,17 +7,20 @@ django.setup()
 
 from apps.properties.models import Property, Room
 from apps.bookings.models import Booking, RoomNight
+from apps.guests.models import Guest
 from datetime import date, timedelta
 from decimal import Decimal
 
 prop = Property.objects.get(id=1)
 today = date.today()
 
-# ── Clean existing bookings + room nights ─────────────────────
-old_count = Booking.objects.filter(property=prop).count()
+# ── Clean existing data ───────────────────────────────────────
+old_bookings = Booking.objects.filter(property=prop).count()
+old_guests = Guest.objects.filter(property=prop).count()
 RoomNight.objects.filter(booking__property=prop).delete()
 Booking.objects.filter(property=prop).delete()
-print(f"Cleared {old_count} old bookings\n")
+Guest.objects.filter(property=prop).delete()
+print(f"Cleared {old_bookings} old bookings, {old_guests} old guests\n")
 
 # ── Create rooms (all types) ──────────────────────────────────
 room_defs = [
@@ -82,7 +85,7 @@ print(f"\nTotal active rooms: {len(all_rooms)}")
 for i, r in enumerate(all_rooms):
     print(f"  [{i}] id={r.id} {r.name_en} ({r.room_type})")
 
-# ── Helper to create a booking ────────────────────────────────
+# ── Helper to create a booking + guest ────────────────────────
 def make_booking(room_idx, guest_name, ci_offset, co_offset, status,
                  source="direct", num_guests=1, payment_method="",
                  notes="", guest_email="", guest_phone="",
@@ -108,9 +111,23 @@ def make_booking(room_idx, guest_name, ci_offset, co_offset, status,
         paid = Decimal("0")
         pay_status = "unpaid"
 
-    # For cancelled bookings, save without triggering RoomNight creation
+    # Create or get Guest record
+    parts = guest_name.strip().split(" ", 1)
+    first_name = parts[0]
+    last_name = parts[1] if len(parts) > 1 else ""
+    guest, _ = Guest.objects.get_or_create(
+        property=prop,
+        first_name=first_name,
+        last_name=last_name,
+        defaults={
+            "phone": guest_phone,
+            "email": guest_email,
+            "country": guest_country,
+        },
+    )
+
     b = Booking(
-        property=prop, room=room,
+        property=prop, room=room, guest=guest,
         check_in=ci, check_out=co,
         num_guests=num_guests, num_nights=num_nights,
         total_price_gel=price, paid_amount_gel=paid,
@@ -121,6 +138,14 @@ def make_booking(room_idx, guest_name, ci_offset, co_offset, status,
         notes=notes, cancellation_reason=cancellation_reason,
     )
     b.save()
+
+    # Update guest stats
+    guest_bookings = Booking.objects.filter(property=prop, guest=guest).exclude(status="cancelled")
+    guest.total_stays = guest_bookings.count()
+    guest.total_spent_gel = sum(
+        b.total_price_gel for b in guest_bookings if b.status == "checked_out"
+    )
+    guest.save(update_fields=["total_stays", "total_spent_gel"])
 
     print(
         f"  [{b.id:>3}] {guest_name:<22} | {status:<12} | {ci} -> {co} "
@@ -167,10 +192,15 @@ make_booking(5, "Michael Chen",      5,  8,  "confirmed", "direct",      2, "bog
 
 # ── Summary ───────────────────────────────────────────────────
 total = Booking.objects.filter(property=prop).count()
+total_guests = Guest.objects.filter(property=prop).count()
 print(f"\n{'='*70}")
 print(f"Done! Total bookings: {total}")
 print(f"Total rooms: {Room.objects.filter(property=prop, is_active=True).count()}")
-print(f"\nBreakdown:")
+print(f"Total guests: {total_guests}")
+print(f"\nBooking breakdown:")
 for s in ["confirmed", "pending", "checked_in", "checked_out", "cancelled", "no_show"]:
     c = Booking.objects.filter(property=prop, status=s).count()
     print(f"  {s:<14} {c}")
+print(f"\nGuests:")
+for g in Guest.objects.filter(property=prop).order_by("first_name"):
+    print(f"  {g.full_name:<22} | {g.country} | stays={g.total_stays} | spent=GEL {g.total_spent_gel}")
