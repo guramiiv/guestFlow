@@ -39,8 +39,10 @@ export async function checkOut(id: number): Promise<Booking> {
   return response.data;
 }
 
-export async function cancelBooking(id: number): Promise<Booking> {
-  const response = await client.post<Booking>(`/bookings/${id}/cancel/`);
+export async function cancelBooking(id: number, cancellationReason?: string): Promise<Booking> {
+  const response = await client.post<Booking>(`/bookings/${id}/cancel/`, {
+    cancellation_reason: cancellationReason || '',
+  });
   return response.data;
 }
 

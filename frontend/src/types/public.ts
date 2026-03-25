@@ -17,6 +17,7 @@ export interface PublicProperty {
   house_rules_en: string;
   amenities: string[];
   photos: string[];
+  banner_photo: string;
   latitude: number | null;
   longitude: number | null;
   rooms: PublicRoom[];

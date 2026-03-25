@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -32,8 +32,12 @@ const navItems = [
 
 export default function DashboardLayout() {
   const { t, i18n } = useTranslation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, fetchUser } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!user) fetchUser();
+  }, [user, fetchUser]);
   const [shareOpen, setShareOpen] = useState(false);
 
   const toggleLanguage = () => {

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
@@ -21,11 +21,15 @@ import {
   Copy,
   Check,
   ExternalLink,
+  ImagePlus,
+  Trash2,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getQrCodeUrl } from '@/api/share';
+import { fetchQrCodeBlob } from '@/api/share';
 
 import { getProperty, updateProperty } from '@/api/property';
+import { uploadPhotos } from '@/api/rooms';
 import { updateMe } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
 import type { Property } from '@/types';
@@ -62,6 +66,8 @@ const propertySchema = z.object({
   house_rules_ka: z.string().optional(),
   house_rules_en: z.string().optional(),
   tax_id: z.string().optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
 });
 
 type PropertyFormData = z.infer<typeof propertySchema>;
@@ -140,6 +146,8 @@ export default function SettingsPage() {
   const [editingProperty, setEditingProperty] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [qrBlobUrl, setQrBlobUrl] = useState<string | null>(null);
 
   const copyBookingUrl = useCallback(async (url: string) => {
     await navigator.clipboard.writeText(url);
@@ -152,6 +160,15 @@ export default function SettingsPage() {
     queryKey: ['property'],
     queryFn: getProperty,
   });
+
+  useEffect(() => {
+    if (property?.slug) {
+      fetchQrCodeBlob().then(setQrBlobUrl).catch(() => {});
+    }
+    return () => {
+      if (qrBlobUrl) URL.revokeObjectURL(qrBlobUrl);
+    };
+  }, [property?.slug]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Property form ── */
   const {
@@ -181,6 +198,8 @@ export default function SettingsPage() {
           house_rules_ka: property.house_rules_ka ?? '',
           house_rules_en: property.house_rules_en ?? '',
           tax_id: property.tax_id ?? '',
+          latitude: property.latitude ?? '',
+          longitude: property.longitude ?? '',
         }
       : {
           name_ka: '',
@@ -199,6 +218,8 @@ export default function SettingsPage() {
           house_rules_ka: '',
           house_rules_en: '',
           tax_id: '',
+          latitude: '',
+          longitude: '',
         },
   });
 
@@ -297,16 +318,98 @@ export default function SettingsPage() {
               </Button>
             </div>
             <div className="flex items-center gap-3 pt-1">
-              <img
-                src={getQrCodeUrl()}
-                alt="QR Code"
-                className="size-[100px] rounded-lg border"
-                crossOrigin="anonymous"
-              />
+              {qrBlobUrl ? (
+                <img
+                  src={qrBlobUrl}
+                  alt="QR Code"
+                  className="size-[100px] rounded-lg border"
+                />
+              ) : (
+                <div className="flex size-[100px] items-center justify-center rounded-lg border bg-muted">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
               <p className="text-xs text-muted-foreground max-w-[200px]">
                 {t('share.qrDescription')}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══ Banner Photo Card ═══ */}
+      {property && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ImagePlus className="h-5 w-5" />
+              {t('settings.bannerPhoto')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-xs text-muted-foreground">{t('settings.bannerPhotoDesc')}</p>
+            {property.banner_photo ? (
+              <div className="relative overflow-hidden rounded-lg border">
+                <img
+                  src={property.banner_photo}
+                  alt="Banner"
+                  className="h-40 w-full object-cover sm:h-52"
+                />
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="absolute right-2 top-2"
+                  onClick={async () => {
+                    try {
+                      await updateProperty({ banner_photo: '' } as Partial<Property>);
+                      queryClient.invalidateQueries({ queryKey: ['property'] });
+                      toast.success(t('settings.bannerRemoved'));
+                    } catch {
+                      toast.error(t('common.error'));
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-1 h-4 w-4" />
+                  {t('common.delete')}
+                </Button>
+              </div>
+            ) : (
+              <label className="flex h-40 cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 transition-colors hover:border-muted-foreground/50">
+                {uploadingBanner ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <>
+                    <ImagePlus className="mb-2 h-8 w-8 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">{t('settings.uploadBanner')}</span>
+                    <span className="mt-1 text-xs text-muted-foreground/60">1200 x 400 {t('settings.recommended')}</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploadingBanner}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadingBanner(true);
+                    try {
+                      const urls = await uploadPhotos([file]);
+                      if (urls[0]) {
+                        await updateProperty({ banner_photo: urls[0] } as Partial<Property>);
+                        queryClient.invalidateQueries({ queryKey: ['property'] });
+                        toast.success(t('settings.bannerSaved'));
+                      }
+                    } catch {
+                      toast.error(t('common.error'));
+                    } finally {
+                      setUploadingBanner(false);
+                      e.target.value = '';
+                    }
+                  }}
+                />
+              </label>
+            )}
           </CardContent>
         </Card>
       )}
@@ -495,6 +598,18 @@ export default function SettingsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              {/* Coordinates */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <Label>{t('property.latitude')}</Label>
+                  <Input {...regProp('latitude')} placeholder="41.7151" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t('property.longitude')}</Label>
+                  <Input {...regProp('longitude')} placeholder="44.8271" />
                 </div>
               </div>
 

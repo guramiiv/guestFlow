@@ -67,7 +67,7 @@ class PropertySerializer(serializers.ModelSerializer):
             'description_ka', 'description_en', 'address_ka', 'city', 'region',
             'latitude', 'longitude', 'phone', 'whatsapp', 'email',
             'check_in_time', 'check_out_time', 'house_rules_ka', 'house_rules_en',
-            'tax_id', 'amenities', 'photos', 'plan', 'is_active',
+            'tax_id', 'amenities', 'photos', 'banner_photo', 'plan', 'is_active',
             'rooms', 'created_at', 'updated_at',
         )
         read_only_fields = ('id', 'slug', 'plan', 'created_at', 'updated_at')
@@ -81,5 +81,5 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             'description_ka', 'description_en', 'address_ka', 'city', 'region',
             'latitude', 'longitude', 'phone', 'whatsapp', 'email',
             'check_in_time', 'check_out_time', 'house_rules_ka', 'house_rules_en',
-            'tax_id', 'amenities', 'photos',
+            'tax_id', 'amenities', 'photos', 'banner_photo',
         )

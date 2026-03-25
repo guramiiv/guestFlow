@@ -60,7 +60,7 @@ class DashboardView(APIView):
             )
             .select_related('room')
             .order_by('check_in')[:10]
-            .values('guest_name', 'check_in', 'status', room_name=F('room__name_ka'))
+            .values('id', 'guest_name', 'check_in', 'status', room_name=F('room__name_ka'))
         )
 
         recent_bookings = list(

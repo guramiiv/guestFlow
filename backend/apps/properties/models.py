@@ -58,6 +58,7 @@ class Property(models.Model):
     tax_id = models.CharField(max_length=20, blank=True)
     amenities = models.JSONField(default=list)
     photos = models.JSONField(default=list)
+    banner_photo = models.URLField(max_length=500, blank=True)
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default='starter')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

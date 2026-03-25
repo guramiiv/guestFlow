@@ -10,6 +10,7 @@ import { getRooms } from '@/api/rooms';
 import CalendarControls from './CalendarControls';
 import CalendarGrid from './CalendarGrid';
 import CalendarDayView from './CalendarDayView';
+import NewBookingSheet from '@/components/bookings/NewBookingSheet';
 
 const VISIBLE_DAYS = 14;
 
@@ -68,9 +69,15 @@ export default function CalendarPage() {
     [],
   );
 
+  // New booking sheet state
+  const [bookingSheetOpen, setBookingSheetOpen] = useState(false);
+  const [bookingInitialRoom, setBookingInitialRoom] = useState<number | undefined>();
+  const [bookingInitialDate, setBookingInitialDate] = useState<string | undefined>();
+
   function handleCellClick(roomId: number, date: string) {
-    // Navigate to new booking page with pre-filled room and date
-    navigate(`/bookings?newBooking=1&room=${roomId}&date=${date}`);
+    setBookingInitialRoom(roomId);
+    setBookingInitialDate(date);
+    setBookingSheetOpen(true);
   }
 
   function handleBookingNavigate(id: number) {
@@ -137,6 +144,15 @@ export default function CalendarPage() {
           </span>
         ))}
       </div>
+
+      {/* New Booking Sheet */}
+      <NewBookingSheet
+        open={bookingSheetOpen}
+        onOpenChange={setBookingSheetOpen}
+        initialRoom={bookingInitialRoom}
+        initialCheckIn={bookingInitialDate}
+        extraInvalidateKeys={[['calendar']]}
+      />
     </div>
   );
 }

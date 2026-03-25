@@ -22,7 +22,6 @@ import {
   Wallet,
   Pencil,
   Save,
-  X,
 } from 'lucide-react';
 
 import {
@@ -143,6 +142,7 @@ export default function BookingDetailPage() {
 
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [editingNotes, setEditingNotes] = useState(false);
 
   /* ── Data fetching ── */
@@ -169,10 +169,11 @@ export default function BookingDetailPage() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: () => cancelBooking(Number(id)),
+    mutationFn: (reason: string) => cancelBooking(Number(id), reason),
     onSuccess: () => {
       invalidate();
       setCancelOpen(false);
+      setCancelReason('');
     },
   });
 
@@ -303,6 +304,14 @@ export default function BookingDetailPage() {
           )}
         </div>
       </div>
+
+      {/* ── Cancellation reason banner ── */}
+      {booking.status === 'cancelled' && booking.cancellation_reason && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+          <p className="text-sm font-medium text-destructive">{t('bookings.cancellationReason')}</p>
+          <p className="mt-1 text-sm whitespace-pre-wrap">{booking.cancellation_reason}</p>
+        </div>
+      )}
 
       {/* ── Main content grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -478,28 +487,7 @@ export default function BookingDetailPage() {
                 <FileText className="h-5 w-5 text-teal" />
                 {t('bookings.notes')}
               </CardTitle>
-              {editingNotes ? (
-                <div className="flex gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => {
-                      notesReset();
-                      setEditingNotes(false);
-                    }}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={notesMutation.isPending}
-                    onClick={handleNotes((d) => notesMutation.mutate(d))}
-                  >
-                    <Save className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              ) : (
+              {!editingNotes && (
                 <Button
                   variant="ghost"
                   size="icon-xs"
@@ -511,11 +499,34 @@ export default function BookingDetailPage() {
             </CardHeader>
             <CardContent>
               {editingNotes ? (
-                <textarea
-                  rows={4}
-                  className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                  {...notesRegister('notes')}
-                />
+                <>
+                  <textarea
+                    rows={4}
+                    className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                    {...notesRegister('notes')}
+                  />
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      size="sm"
+                      disabled={notesMutation.isPending}
+                      onClick={handleNotes((d) => notesMutation.mutate(d))}
+                    >
+                      <Save className="mr-1 h-4 w-4" />
+                      {t('common.save')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        notesReset();
+                        setEditingNotes(false);
+                      }}
+                    >
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
+                </>
+
               ) : (
                 <p className="text-sm whitespace-pre-wrap">
                   {booking.notes || (
@@ -543,6 +554,12 @@ export default function BookingDetailPage() {
                   <span className="text-muted-foreground">{t('common.updated')}</span>
                   <DateDisplay date={booking.updated_at} />
                 </div>
+                {booking.status === 'cancelled' && (
+                  <div className="flex justify-between">
+                    <span className="text-destructive">{t('bookings.cancelledDate')}</span>
+                    <span className="text-destructive"><DateDisplay date={booking.updated_at} /></span>
+                  </div>
+                )}
               </dl>
             </CardContent>
           </Card>
@@ -600,7 +617,10 @@ export default function BookingDetailPage() {
       </Dialog>
 
       {/* ── Cancel Confirm Dialog ── */}
-      <Dialog open={cancelOpen} onOpenChange={setCancelOpen}>
+      <Dialog open={cancelOpen} onOpenChange={(open) => {
+        setCancelOpen(open);
+        if (!open) setCancelReason('');
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('bookings.cancelBooking')}</DialogTitle>
@@ -608,6 +628,16 @@ export default function BookingDetailPage() {
               {t('bookings.confirmCancel')}
             </DialogDescription>
           </DialogHeader>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">{t('bookings.cancellationReason')}</label>
+            <textarea
+              rows={3}
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              placeholder={t('bookings.cancellationReasonPlaceholder')}
+              className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+            />
+          </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setCancelOpen(false)}>
               {t('common.cancel')}
@@ -615,7 +645,7 @@ export default function BookingDetailPage() {
             <Button
               variant="destructive"
               disabled={cancelMutation.isPending}
-              onClick={() => cancelMutation.mutate()}
+              onClick={() => cancelMutation.mutate(cancelReason)}
             >
               {cancelMutation.isPending
                 ? t('common.loading')

@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx vite:*)",
+      "Bash(curl -s http://127.0.0.1:8000/robots.txt)",
+      "Bash(curl -s http://127.0.0.1:8000/sitemap.xml)",
+      "Bash(find /c/Users/guiv01/Desktop/GuestFlow/frontend -maxdepth 3 -type f \\\\\\(-name tailwind.config.* -o -name *theme* -o -name *color* \\\\\\))",
+      "Bash(ls -la /c/Users/guiv01/Desktop/GuestFlow/frontend/*.config.*)",
+      "Bash(../.venv/Scripts/python manage.py makemigrations properties --name banner_photo)",
+      "Bash(../.venv/Scripts/python manage.py migrate)",
+      "Bash(python -c \":*)",
+      "Bash(python manage.py shell -c \":*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/property/share/qr/)",
+      "Bash(python manage.py makemigrations bookings --name cancellation_reason)",
+      "Bash(python manage.py migrate)",
+      "Bash(python manage.py check)",
+      "Bash(.venv/Scripts/python manage.py shell -c \":*)",
+      "Bash(ls /c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python*)",
+      "Bash(ls /c/Users/guiv01/Desktop/GuestFlow/backend/.venv/bin/python*)",
+      "Bash(ls /c/Users/guiv01/Desktop/GuestFlow/.venv/bin/python*)",
+      "Bash(/c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python.exe manage.py shell -c \":*)",
+      "Bash(PYTHONIOENCODING=utf-8 /c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python.exe manage.py shell -c \":*)",
+      "Bash(PYTHONIOENCODING=utf-8 /c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python.exe seed_test_data.py)"
+    ]
+  }
+}

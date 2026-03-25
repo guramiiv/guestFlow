@@ -38,13 +38,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-  SheetDescription,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
@@ -219,65 +219,74 @@ function RoomFormSheet({
   const onSubmit = (data: RoomFormData) => saveMutation.mutate(data);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
             {room ? t('rooms.editRoom') : t('rooms.addRoom')}
-          </SheetTitle>
-          <SheetDescription className="sr-only">
+          </DialogTitle>
+          <DialogDescription className="sr-only">
             {room ? t('rooms.editRoom') : t('rooms.addRoom')}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="flex flex-col gap-4 px-4 pb-4"
+          className="flex flex-col gap-5"
         >
-          {/* Name KA */}
-          <div className="space-y-1.5">
-            <Label htmlFor="name_ka">{t('rooms.roomName')} (KA) *</Label>
-            <Input
-              id="name_ka"
-              {...register('name_ka')}
-              aria-invalid={!!errors.name_ka}
-            />
+          {/* Name row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="name_ka">{t('rooms.roomName')} (KA) *</Label>
+              <Input
+                id="name_ka"
+                {...register('name_ka')}
+                aria-invalid={!!errors.name_ka}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="name_en">{t('rooms.roomName')} (EN)</Label>
+              <Input id="name_en" {...register('name_en')} />
+            </div>
           </div>
 
-          {/* Name EN */}
-          <div className="space-y-1.5">
-            <Label htmlFor="name_en">{t('rooms.roomName')} (EN)</Label>
-            <Input id="name_en" {...register('name_en')} />
-          </div>
-
-          {/* Room Type */}
-          <div className="space-y-1.5">
-            <Label>{t('rooms.roomType')} *</Label>
-            <Controller
-              control={control}
-              name="room_type"
-              render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
-                  <SelectTrigger className="w-full" aria-invalid={!!errors.room_type}>
-                    <SelectValue placeholder={t('rooms.roomType')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROOM_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {t(`rooms.types.${type}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {/* Max Guests + Floor row */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Type + Price + Guests + Floor */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="space-y-1.5">
+              <Label>{t('rooms.roomType')} *</Label>
+              <Controller
+                control={control}
+                name="room_type"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full" aria-invalid={!!errors.room_type}>
+                      <SelectValue placeholder={t('rooms.roomType')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROOM_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {t(`rooms.types.${type}`)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="base_price_gel">{t('rooms.pricePerNight')} (₾) *</Label>
+              <Input
+                id="base_price_gel"
+                type="number"
+                step="0.01"
+                min={0}
+                {...register('base_price_gel', { valueAsNumber: true })}
+                aria-invalid={!!errors.base_price_gel}
+              />
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="max_guests">{t('rooms.maxGuests')} *</Label>
               <Input
@@ -299,25 +308,12 @@ function RoomFormSheet({
             </div>
           </div>
 
-          {/* Price */}
-          <div className="space-y-1.5">
-            <Label htmlFor="base_price_gel">{t('rooms.pricePerNight')} (₾) *</Label>
-            <Input
-              id="base_price_gel"
-              type="number"
-              step="0.01"
-              min={0}
-              {...register('base_price_gel', { valueAsNumber: true })}
-              aria-invalid={!!errors.base_price_gel}
-            />
-          </div>
-
           {/* Description */}
           <div className="space-y-1.5">
             <Label htmlFor="description_ka">{t('property.description')}</Label>
             <textarea
               id="description_ka"
-              rows={3}
+              rows={2}
               className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               {...register('description_ka')}
             />
@@ -353,7 +349,7 @@ function RoomFormSheet({
 
             {/* Thumbnails */}
             {photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {photos.map((url, i) => (
                   <div key={url} className="group relative aspect-[4/3] overflow-hidden rounded-lg border">
                     <img src={url} alt="" className="h-full w-full object-cover" />
@@ -470,7 +466,7 @@ function RoomFormSheet({
             ))}
           </div>
 
-          <SheetFooter className="px-0">
+          <DialogFooter>
             <Button
               type="submit"
               className="w-full bg-teal text-white hover:bg-teal/90"
@@ -478,10 +474,10 @@ function RoomFormSheet({
             >
               {saveMutation.isPending ? t('common.loading') : t('common.save')}
             </Button>
-          </SheetFooter>
+          </DialogFooter>
         </form>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
 

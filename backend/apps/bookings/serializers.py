@@ -18,7 +18,7 @@ class BookingSerializer(serializers.ModelSerializer):
             'status', 'check_in', 'check_out', 'num_guests', 'num_nights',
             'total_price_gel', 'paid_amount_gel', 'payment_status', 'payment_method',
             'guest_name', 'guest_phone', 'guest_email', 'guest_country',
-            'notes', 'guest_message', 'created_at', 'updated_at',
+            'notes', 'guest_message', 'cancellation_reason', 'created_at', 'updated_at',
         )
         read_only_fields = ('id', 'num_nights', 'property', 'created_at', 'updated_at')
 
@@ -95,7 +95,7 @@ class PublicPropertySerializer(serializers.ModelSerializer):
             'phone', 'whatsapp', 'email',
             'check_in_time', 'check_out_time',
             'house_rules_ka', 'house_rules_en',
-            'amenities', 'photos', 'latitude', 'longitude',
+            'amenities', 'photos', 'banner_photo', 'latitude', 'longitude',
         )
         read_only_fields = fields
 

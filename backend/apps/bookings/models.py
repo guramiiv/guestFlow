@@ -68,6 +68,7 @@ class Booking(models.Model):
     guest_country = models.CharField(max_length=2, blank=True)
     notes = models.TextField(blank=True)
     guest_message = models.TextField(blank=True)
+    cancellation_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -115,10 +116,11 @@ class Booking(models.Model):
             except IntegrityError:
                 raise ValidationError('ოთახი ამ თარიღებში დაკავებულია.')
 
-    def cancel(self):
+    def cancel(self, reason=''):
         self.status = 'cancelled'
+        self.cancellation_reason = reason
         self.room_nights.all().delete()
-        self.save(update_fields=['status', 'updated_at'])
+        self.save(update_fields=['status', 'cancellation_reason', 'updated_at'])
 
     @classmethod
     def check_availability(cls, room_id, check_in, check_out):

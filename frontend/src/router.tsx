@@ -14,6 +14,7 @@ import PublicLayout from '@/components/public/PublicLayout';
 import PublicBookingPage from '@/pages/public/PublicBookingPage';
 import BookingDetailPage from '@/pages/bookings/BookingDetailPage';
 import SettingsPage from '@/pages/settings/SettingsPage';
+import LandingPage from '@/pages/LandingPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -31,7 +32,19 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function LandingOrDashboard() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <LandingPage />;
+}
+
 export const routes: RouteObject[] = [
+  {
+    path: '/',
+    element: <LandingOrDashboard />,
+  },
   {
     path: '/login',
     element: <PublicRoute><LoginPage /></PublicRoute>,
@@ -48,14 +61,12 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    path: '/',
     element: (
       <ProtectedRoute>
         <DashboardLayout />
       </ProtectedRoute>
     ),
     children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'calendar', element: <CalendarPage /> },
       { path: 'bookings', element: <BookingsPage /> },

@@ -106,6 +106,9 @@
     "guestMessage": "Guest Message",
     "roomOccupied": "Room is occupied on these dates",
     "confirmCancel": "Are you sure you want to cancel this booking?",
+    "cancelledDate": "Cancelled",
+    "cancellationReason": "Cancellation Reason",
+    "cancellationReasonPlaceholder": "Optional: reason for cancellation...",
     "status": {
       "pending": "Pending",
       "confirmed": "Confirmed",
@@ -198,7 +201,13 @@
       "villa": "Villa"
     },
     "bookingPage": "Booking Page",
-    "bookingPageUrl": "Booking page URL"
+    "bookingPageUrl": "Booking page URL",
+    "bannerPhoto": "Banner Photo",
+    "bannerPhotoDesc": "Upload a wide banner image for your public booking page hero section. Recommended size: 1200×400px.",
+    "uploadBanner": "Click to upload banner",
+    "recommended": "recommended",
+    "bannerSaved": "Banner photo saved",
+    "bannerRemoved": "Banner photo removed"
   },
   "property": {
     "title": "Property Settings",
@@ -211,7 +220,9 @@
     "checkOutTime": "Check-out Time",
     "houseRules": "House Rules",
     "taxId": "Tax ID",
-    "description": "Description"
+    "description": "Description",
+    "latitude": "Latitude",
+    "longitude": "Longitude"
   },
   "regions": {
     "tbilisi": "Tbilisi",
@@ -324,7 +335,82 @@
       "airport_transfer": "Airport Transfer",
       "pet_friendly": "Pet Friendly"
     },
+    "backToProperty": "Back to Property",
     "poweredBy": "Powered by GuestFlow.ge"
+  },
+  "landing": {
+    "getStartedFree": "Get Started — Free",
+    "seeDemo": "See Live Demo",
+    "heroTitle": "The simplest way to manage your guesthouse in Georgia",
+    "heroSubtitle": "Accept direct bookings, manage rooms & guests, and grow your business — all from one platform built for Georgian hospitality.",
+    "freeForever": "Free forever",
+    "noCard": "No credit card needed",
+    "setupMinutes": "Set up in 5 minutes",
+    "featuresTitle": "Everything you need to run your property",
+    "featuresSubtitle": "From direct bookings to financial reports — GuestFlow replaces the notebook, the spreadsheet, and the WhatsApp chaos.",
+    "features": {
+      "bookingPage": {
+        "title": "Your Own Booking Page",
+        "desc": "A beautiful, multi-language booking page for your property. Share the link on social media and receive direct bookings — no commission."
+      },
+      "calendar": {
+        "title": "Visual Calendar",
+        "desc": "See all your rooms and bookings at a glance. Drag, edit, and manage availability in a clean calendar view."
+      },
+      "guestManagement": {
+        "title": "Guest Database",
+        "desc": "Automatically build a guest database with booking history, contact details, and spending data."
+      },
+      "payments": {
+        "title": "Payment Tracking",
+        "desc": "Track cash, card, BOG iPay, and bank transfers. Know exactly who paid and how much is outstanding."
+      },
+      "reports": {
+        "title": "Revenue & Occupancy Reports",
+        "desc": "Daily revenue, occupancy rates, bookings by source, and VAT summaries — export to Excel anytime."
+      },
+      "qrShare": {
+        "title": "QR Code & Social Sharing",
+        "desc": "Generate QR codes for your booking page. Share on Facebook, WhatsApp, Viber, and Telegram in one click."
+      }
+    },
+    "howItWorksTitle": "Up and running in 3 steps",
+    "steps": {
+      "register": {
+        "title": "Create Your Account",
+        "desc": "Register for free, add your property details, rooms, and photos."
+      },
+      "share": {
+        "title": "Share Your Booking Link",
+        "desc": "Share your unique booking page on social media, messengers, or print QR codes for your reception."
+      },
+      "manage": {
+        "title": "Manage & Grow",
+        "desc": "Accept bookings, track payments, and use reports to grow your revenue."
+      }
+    },
+    "whyTitle": "Built for Georgian hospitality",
+    "why": {
+      "georgian": {
+        "title": "Made in Georgia, for Georgia",
+        "desc": "Full Georgian language support, GEL currency, Georgian regions, and local payment methods like BOG iPay."
+      },
+      "multilang": {
+        "title": "Guests from everywhere",
+        "desc": "Your booking page works in Georgian, English, and Russian — so every guest can book in their own language."
+      },
+      "free": {
+        "title": "100% free, no commissions",
+        "desc": "No monthly fees, no per-booking commissions, no hidden charges. GuestFlow is free for property owners."
+      },
+      "mobile": {
+        "title": "Works on any device",
+        "desc": "Manage your property from your phone, tablet, or computer. Your guests can book from any device too."
+      }
+    },
+    "ctaTitle": "Start receiving direct bookings today",
+    "ctaSubtitle": "Join Georgian guesthouse owners who save time and earn more with GuestFlow.",
+    "contactEmail": "Contact: hello@guestflow.ge"
   },
   "share": {
     "title": "Share your booking page",

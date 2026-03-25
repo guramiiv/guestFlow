@@ -19,6 +19,7 @@ import {
   BedDouble,
   X,
   ArrowLeft,
+  Camera,
 } from 'lucide-react';
 import type { AvailableRoom } from '@/types/public';
 
@@ -45,6 +46,7 @@ interface AvailableRoomsListProps {
   nights: number;
   onSelectRoom: (room: AvailableRoom) => void;
   isLoading: boolean;
+  onViewPhotos?: (photos: string[], roomName: string, index: number) => void;
 }
 
 function localized(ka: string, en: string, lang: string) {
@@ -56,6 +58,7 @@ export default function AvailableRoomsList({
   nights,
   onSelectRoom,
   isLoading,
+  onViewPhotos,
 }: AvailableRoomsListProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
@@ -112,12 +115,12 @@ export default function AvailableRoomsList({
 
   /* ─── Room cards ─── */
   return (
-    <div>
+    <section aria-labelledby="available-rooms-heading">
       {/* Header */}
       <div className="mb-5">
-        <h3 className="text-xl font-bold" style={{ color: '#0D2137' }}>
+        <h2 id="available-rooms-heading" className="text-xl font-bold" style={{ color: '#0D2137' }}>
           {t('public.availableRooms')}
-        </h3>
+        </h2>
         <p className="mt-1 text-sm" style={{ color: '#666' }}>
           {t('public.roomsAvailableCount', {
             count: sorted.length,
@@ -137,11 +140,12 @@ export default function AvailableRoomsList({
               lang={lang}
               isBestPrice={isBestPrice}
               onSelect={() => onSelectRoom(ar)}
+              onViewPhotos={onViewPhotos}
             />
           );
         })}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -151,21 +155,24 @@ function RoomResultCard({
   lang,
   isBestPrice,
   onSelect,
+  onViewPhotos,
 }: {
   availableRoom: AvailableRoom;
   lang: string;
   isBestPrice: boolean;
   onSelect: () => void;
+  onViewPhotos?: (photos: string[], roomName: string, index: number) => void;
 }) {
   const { t } = useTranslation();
   const { room, price_per_night_gel, total_price_gel, nights } = availableRoom;
   const roomName = localized(room.name_ka, room.name_en, lang);
+  const roomNameEn = room.name_en || room.name_ka;
   const description = localized(room.description_ka, room.description_en, lang);
   const truncatedDesc =
     description.length > 100 ? description.slice(0, 100) + '…' : description;
 
   return (
-    <div className="group relative overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md">
+    <article className="group relative overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md">
       {/* Best price badge */}
       {isBestPrice && (
         <div
@@ -180,7 +187,11 @@ function RoomResultCard({
         {/* ── Left: Photo (40%) ── */}
         <div className="relative sm:w-[40%]">
           <div
-            className="flex aspect-[3/2] items-center justify-center sm:h-full sm:aspect-auto"
+            className="flex aspect-[3/2] items-center justify-center sm:h-full sm:aspect-auto cursor-pointer"
+            role="img"
+            aria-label={room.photos?.[0]
+              ? `${roomNameEn} - ${room.amenities?.slice(0, 3).map(a => t(`public.amenityLabels.${a}`, a)).join(', ') || room.room_type}`
+              : `${roomNameEn} - no photo available`}
             style={
               room.photos?.[0]
                 ? {
@@ -190,9 +201,20 @@ function RoomResultCard({
                   }
                 : { backgroundColor: '#F0F4F5' }
             }
+            onClick={() => {
+              if (room.photos?.length > 0 && onViewPhotos) {
+                onViewPhotos(room.photos, roomNameEn, 0);
+              }
+            }}
           >
             {!room.photos?.[0] && (
-              <BedDouble size={48} style={{ color: '#117A65', opacity: 0.3 }} />
+              <BedDouble size={48} style={{ color: '#117A65', opacity: 0.3 }} aria-hidden="true" />
+            )}
+            {room.photos?.length > 1 && (
+              <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+                <Camera size={12} aria-hidden="true" />
+                {room.photos.length}
+              </span>
             )}
           </div>
         </div>
@@ -201,9 +223,9 @@ function RoomResultCard({
         <div className="flex flex-1 flex-col p-4 sm:p-5">
           {/* Top info */}
           <div className="mb-3">
-            <h4 className="text-lg font-bold" style={{ color: '#0D2137' }}>
+            <h3 className="text-lg font-bold" style={{ color: '#0D2137' }}>
               {roomName}
-            </h4>
+            </h3>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               <span
                 className="inline-block rounded-full px-2.5 py-0.5 text-xs font-medium"
@@ -215,7 +237,7 @@ function RoomResultCard({
                 className="flex items-center gap-1 text-xs"
                 style={{ color: '#666' }}
               >
-                <Users size={14} />
+                <Users size={14} aria-hidden="true" />
                 {t('public.maxGuests', { count: room.max_guests })}
               </span>
             </div>
@@ -233,7 +255,7 @@ function RoomResultCard({
                     className="flex items-center gap-1 rounded-md bg-gray-50 px-2 py-1 text-xs"
                     style={{ color: '#555' }}
                   >
-                    <Icon size={13} />
+                    <Icon size={13} aria-hidden="true" />
                     <span className="hidden sm:inline">
                       {t(`public.amenityLabels.${a}`, a)}
                     </span>
@@ -252,11 +274,15 @@ function RoomResultCard({
 
           {/* ── Price + Book button ── */}
           <div className="mt-auto flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+            <div itemScope itemType="https://schema.org/PriceSpecification">
+              <meta itemProp="priceCurrency" content="GEL" />
+              <meta itemProp="unitCode" content="DAY" />
               <div className="flex items-baseline gap-1">
                 <span
                   className="text-2xl font-bold"
                   style={{ color: '#117A65' }}
+                  itemProp="price"
+                  content={String(Number(price_per_night_gel).toFixed(0))}
                 >
                   ₾{Number(price_per_night_gel).toFixed(0)}
                 </span>
@@ -277,6 +303,7 @@ function RoomResultCard({
 
             <button
               onClick={onSelect}
+              aria-label={`Book ${roomNameEn}`}
               className="w-full rounded-lg px-6 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 sm:w-auto"
               style={{ backgroundColor: '#F39C12', minHeight: '48px' }}
             >
@@ -285,7 +312,7 @@ function RoomResultCard({
           </div>
         </div>
       </div>
-    </div>
+    </article>
   );
 }
 

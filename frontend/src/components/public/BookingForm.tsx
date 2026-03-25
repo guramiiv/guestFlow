@@ -207,21 +207,23 @@ export default function BookingForm({
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col gap-8 lg:flex-row">
           {/* ══════ SUMMARY CARD — order-first on mobile so guest sees what they're booking ══════ */}
-          <div className="order-first lg:order-last lg:w-[380px]">
+          <aside className="order-first lg:order-last lg:w-[380px]" aria-label="Booking summary">
             <div
               className="rounded-xl border bg-white p-5 shadow-sm lg:sticky lg:top-24"
             >
-              <h4
+              <h3
                 className="mb-4 text-base font-bold"
                 style={{ color: '#0D2137' }}
               >
                 {t('public.bookingDetails')}
-              </h4>
+              </h3>
 
               {/* Room thumbnail */}
               <div className="mb-4 flex gap-3">
                 <div
                   className="flex h-16 w-20 shrink-0 items-center justify-center rounded-lg"
+                  role="img"
+                  aria-label={`${room.name_en || room.name_ka} thumbnail`}
                   style={
                     room.photos?.[0]
                       ? {
@@ -236,6 +238,7 @@ export default function BookingForm({
                     <BedDouble
                       size={24}
                       style={{ color: '#117A65', opacity: 0.3 }}
+                      aria-hidden="true"
                     />
                   )}
                 </div>
@@ -331,31 +334,33 @@ export default function BookingForm({
                 className="mt-5 flex items-center gap-1 text-sm hover:underline"
                 style={{ color: '#117A65', minHeight: '44px' }}
               >
-                <ArrowLeft size={14} />
+                <ArrowLeft size={14} aria-hidden="true" />
                 {t('public.backToRooms')}
               </button>
             </div>
-          </div>
+          </aside>
 
           {/* ══════ FORM COLUMN ══════ */}
           <div className="order-last flex-1 lg:order-first">
             {/* Section header */}
-            <h3
+            <h2
               className="mb-6 text-xl font-bold"
               style={{ color: '#0D2137' }}
             >
               {t('public.yourDetails')}
-            </h3>
+            </h2>
 
             {/* Full name */}
             <div className="mb-4">
               <label
+                htmlFor="guest-name"
                 className="mb-1 block text-sm font-medium"
                 style={{ color: '#2C3E50' }}
               >
                 {t('public.fullName')} *
               </label>
               <input
+                id="guest-name"
                 {...register('guest_name')}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2"
                 style={
@@ -374,12 +379,14 @@ export default function BookingForm({
             {/* Email */}
             <div className="mb-4">
               <label
+                htmlFor="guest-email"
                 className="mb-1 block text-sm font-medium"
                 style={{ color: '#2C3E50' }}
               >
                 {t('public.email')} *
               </label>
               <input
+                id="guest-email"
                 {...register('guest_email')}
                 type="email"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2"
@@ -399,12 +406,14 @@ export default function BookingForm({
             {/* Phone */}
             <div className="mb-4">
               <label
+                htmlFor="guest-phone"
                 className="mb-1 block text-sm font-medium"
                 style={{ color: '#2C3E50' }}
               >
                 {t('public.phone')}
               </label>
               <input
+                id="guest-phone"
                 {...register('guest_phone')}
                 type="tel"
                 placeholder="+995..."
@@ -425,12 +434,14 @@ export default function BookingForm({
             {/* Country */}
             <div className="mb-4">
               <label
+                htmlFor="guest-country"
                 className="mb-1 block text-sm font-medium"
                 style={{ color: '#2C3E50' }}
               >
                 {t('public.country')}
               </label>
               <select
+                id="guest-country"
                 {...register('guest_country')}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2"
                 style={{ '--tw-ring-color': '#117A65', minHeight: '44px' } as React.CSSProperties}
@@ -456,12 +467,14 @@ export default function BookingForm({
             {/* Message */}
             <div className="mb-6">
               <label
+                htmlFor="guest-message"
                 className="mb-1 block text-sm font-medium"
                 style={{ color: '#2C3E50' }}
               >
                 {t('public.message')}
               </label>
               <textarea
+                id="guest-message"
                 {...register('guest_message')}
                 rows={3}
                 placeholder={t('public.messagePlaceholder')}
@@ -471,13 +484,15 @@ export default function BookingForm({
             </div>
 
             {/* ─── Payment method ─── */}
-            <div className="mb-6">
-              <h4
-                className="mb-3 text-base font-bold"
-                style={{ color: '#0D2137' }}
-              >
-                {t('public.paymentMethod')}
-              </h4>
+            <fieldset className="mb-6">
+              <legend>
+                <h3
+                  className="mb-3 text-base font-bold"
+                  style={{ color: '#0D2137' }}
+                >
+                  {t('public.paymentMethod')}
+                </h3>
+              </legend>
 
               <div className="space-y-3">
                 {/* Pay at property */}
@@ -546,12 +561,13 @@ export default function BookingForm({
                   </div>
                 </label>
               </div>
-            </div>
+            </fieldset>
 
             {/* Submit error */}
             {submitError && (
               <div
                 className="mb-4 rounded-lg p-3 text-sm"
+                role="alert"
                 style={{ backgroundColor: '#FDE8E8', color: '#E74C3C' }}
               >
                 {submitError}

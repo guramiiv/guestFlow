@@ -12,6 +12,7 @@ import {
   MapPin,
   Printer,
   Clock,
+  ArrowLeft,
 } from 'lucide-react';
 import type {
   BookingConfirmation as BookingConfirmationType,
@@ -33,11 +34,13 @@ function localized(ka_val: string, en_val: string, lang: string) {
 interface BookingConfirmationProps {
   confirmation: BookingConfirmationType;
   property: PublicProperty;
+  onBackToProperty?: () => void;
 }
 
 export default function BookingConfirmation({
   confirmation,
   property,
+  onBackToProperty,
 }: BookingConfirmationProps) {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
@@ -107,6 +110,7 @@ export default function BookingConfirmation({
         <h2
           className="mb-2 text-center text-xl font-bold sm:text-2xl"
           style={{ color: '#0D2137' }}
+          role="status"
         >
           {t('public.thankYou')}
         </h2>
@@ -272,9 +276,10 @@ export default function BookingConfirmation({
             {property.phone && (
               <a
                 href={`tel:${property.phone}`}
+                aria-label={`Call ${propertyName}: ${property.phone}`}
                 className="flex items-center gap-2 hover:underline"
               >
-                <Phone size={16} style={{ color: '#117A65' }} />
+                <Phone size={16} style={{ color: '#117A65' }} aria-hidden="true" />
                 {property.phone}
               </a>
             )}
@@ -285,9 +290,10 @@ export default function BookingConfirmation({
                 href={`https://wa.me/${property.whatsapp.replace(/[^0-9]/g, '')}?text=${whatsappMessage}`}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={`Contact ${propertyName} on WhatsApp`}
                 className="flex items-center gap-2 hover:underline"
               >
-                <Phone size={16} style={{ color: '#25D366' }} />
+                <Phone size={16} style={{ color: '#25D366' }} aria-hidden="true" />
                 WhatsApp
               </a>
             )}
@@ -296,9 +302,10 @@ export default function BookingConfirmation({
             {property.email && (
               <a
                 href={`mailto:${property.email}`}
+                aria-label={`Email ${propertyName}: ${property.email}`}
                 className="flex items-center gap-2 hover:underline"
               >
-                <Mail size={16} style={{ color: '#117A65' }} />
+                <Mail size={16} style={{ color: '#117A65' }} aria-hidden="true" />
                 {property.email}
               </a>
             )}
@@ -323,14 +330,29 @@ export default function BookingConfirmation({
               href={`https://www.google.com/maps?q=${property.latitude},${property.longitude}`}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`View ${propertyName} on Google Maps`}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
               style={{ backgroundColor: '#117A65' }}
             >
-              <MapPin size={16} />
+              <MapPin size={16} aria-hidden="true" />
               {t('public.viewOnMap')}
             </a>
           )}
         </div>
+
+        {/* Back to property */}
+        {onBackToProperty && (
+          <div className="mt-4" data-print-hide>
+            <button
+              onClick={onBackToProperty}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-3 text-sm font-medium transition-colors hover:bg-gray-50"
+              style={{ color: '#117A65' }}
+            >
+              <ArrowLeft size={16} />
+              {t('public.backToProperty')}
+            </button>
+          </div>
+        )}
       </section>
     </>
   );

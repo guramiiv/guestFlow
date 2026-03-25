@@ -120,7 +120,8 @@ class BookingViewSet(viewsets.ModelViewSet):
                 {'detail': 'ჯავშანი ვერ გაუქმდება.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        booking.cancel()
+        reason = request.data.get('cancellation_reason', '')
+        booking.cancel(reason=reason)
         return Response(BookingSerializer(booking).data)
 
     @action(detail=True, methods=['post'])

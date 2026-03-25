@@ -17,3 +17,8 @@ export function getQrCodeUrl(slug?: string): string {
   }
   return `${baseURL}/property/share/qr/`;
 }
+
+export async function fetchQrCodeBlob(): Promise<string> {
+  const response = await client.get('/property/share/qr/', { responseType: 'blob' });
+  return URL.createObjectURL(response.data);
+}

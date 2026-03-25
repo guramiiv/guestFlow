@@ -8,7 +8,6 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { differenceInCalendarDays, parseISO } from 'date-fns';
 import {
   Plus,
   MoreHorizontal,
@@ -22,17 +21,16 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   getBookings,
-  createBooking,
   checkIn,
   checkOut,
   cancelBooking,
   recordPayment,
 } from '@/api/bookings';
-import { getRooms } from '@/api/rooms';
-import type { Booking, BookingFilters, Room } from '@/types';
+import type { Booking, BookingFilters } from '@/types';
 import CurrencyDisplay from '@/components/shared/CurrencyDisplay';
 import StatusBadge from '@/components/shared/StatusBadge';
 import DateDisplay from '@/components/shared/DateDisplay';
+import NewBookingSheet from '@/components/bookings/NewBookingSheet';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,14 +50,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-  SheetDescription,
-} from '@/components/ui/sheet';
 import {
   Dialog,
   DialogContent,
@@ -97,22 +87,6 @@ const paymentStatusStyles: Record<string, string> = {
 };
 
 /* ── Zod Schemas ─────────────────────────────── */
-
-const bookingFormSchema = z.object({
-  room: z.number().min(1, 'Required'),
-  check_in: z.string().min(1, 'Required'),
-  check_out: z.string().min(1, 'Required'),
-  num_guests: z.number().min(1),
-  source: z.string().min(1),
-  guest_name: z.string().min(1),
-  guest_phone: z.string(),
-  guest_email: z.string(),
-  guest_country: z.string(),
-  notes: z.string(),
-  payment_method: z.string(),
-});
-
-type BookingFormData = z.infer<typeof bookingFormSchema>;
 
 const paymentFormSchema = z.object({
   amount: z.number().min(0.01),
@@ -152,234 +126,6 @@ function SkeletonRow() {
         </TableCell>
       ))}
     </TableRow>
-  );
-}
-
-/* ── New Booking Sheet ───────────────────────── */
-
-function NewBookingSheet({
-  open,
-  onOpenChange,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}) {
-  const { t } = useTranslation();
-  const queryClient = useQueryClient();
-
-  const { data: roomsData } = useQuery({
-    queryKey: ['rooms'],
-    queryFn: getRooms,
-  });
-  const rooms = roomsData?.results ?? [];
-
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<BookingFormData>({
-    resolver: zodResolver(bookingFormSchema),
-    defaultValues: {
-      room: 0,
-      check_in: '',
-      check_out: '',
-      num_guests: 1,
-      source: 'direct',
-      guest_name: '',
-      guest_phone: '',
-      guest_email: '',
-      guest_country: 'GE',
-      notes: '',
-      payment_method: '',
-    },
-  });
-
-  const watchCheckIn = watch('check_in');
-  const watchCheckOut = watch('check_out');
-  const watchRoom = watch('room');
-
-  const nights =
-    watchCheckIn && watchCheckOut
-      ? Math.max(differenceInCalendarDays(parseISO(watchCheckOut), parseISO(watchCheckIn)), 0)
-      : 0;
-
-  const selectedRoom = rooms.find((r: Room) => r.id === watchRoom);
-  const estimatedTotal = selectedRoom ? nights * parseFloat(selectedRoom.base_price_gel) : 0;
-
-  const createMutation = useMutation({
-    mutationFn: createBooking,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      reset();
-      onOpenChange(false);
-    },
-  });
-
-  function onSubmit(data: BookingFormData) {
-    const payload: Record<string, unknown> = {
-      ...data,
-      total_price_gel: estimatedTotal.toFixed(2),
-    };
-    if (!payload.payment_method) delete payload.payment_method;
-    createMutation.mutate(payload as unknown as Partial<Booking>);
-  }
-
-  return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>{t('bookings.newBooking')}</SheetTitle>
-          <SheetDescription>{t('bookings.selectRoom')}</SheetDescription>
-        </SheetHeader>
-
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 p-4">
-          {/* Room */}
-          <div className="space-y-1.5">
-            <Label>{t('bookings.room')}</Label>
-            <Controller
-              name="room"
-              control={control}
-              render={({ field }) => (
-                <Select
-                  value={field.value ? String(field.value) : undefined}
-                  onValueChange={(v) => field.onChange(Number(v))}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t('bookings.selectRoom')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rooms
-                      .filter((r: Room) => r.is_active)
-                      .map((r: Room) => (
-                        <SelectItem key={r.id} value={String(r.id)}>
-                          {r.name_ka} — ₾{r.base_price_gel}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            {errors.room && <p className="text-xs text-destructive">{errors.room.message}</p>}
-          </div>
-
-          {/* Dates */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>{t('common.from')}</Label>
-              <Input type="date" {...register('check_in')} />
-              {errors.check_in && <p className="text-xs text-destructive">{errors.check_in.message}</p>}
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('common.to')}</Label>
-              <Input type="date" {...register('check_out')} />
-              {errors.check_out && <p className="text-xs text-destructive">{errors.check_out.message}</p>}
-            </div>
-          </div>
-
-          {/* Nights / estimated total */}
-          {nights > 0 && (
-            <div className="flex items-center gap-4 rounded-lg bg-muted/50 px-3 py-2 text-sm">
-              <span>
-                {t('bookings.nights')}: <strong>{nights}</strong>
-              </span>
-              <span>
-                {t('bookings.totalPrice')}: <strong><CurrencyDisplay amount={estimatedTotal} /></strong>
-              </span>
-            </div>
-          )}
-
-          {/* Guests count */}
-          <div className="space-y-1.5">
-            <Label>{t('bookings.numGuests')}</Label>
-            <Input type="number" min={1} {...register('num_guests', { valueAsNumber: true })} />
-          </div>
-
-          {/* Source */}
-          <div className="space-y-1.5">
-            <Label>{t('bookings.source')}</Label>
-            <Controller
-              name="source"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SOURCES.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {t(`bookings.source_labels.${s}`, s)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {/* Guest info */}
-          <div className="space-y-1.5">
-            <Label>{t('bookings.guestName')}</Label>
-            <Input {...register('guest_name')} />
-            {errors.guest_name && <p className="text-xs text-destructive">{errors.guest_name.message}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>{t('auth.phone')}</Label>
-              <Input {...register('guest_phone')} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('auth.email')}</Label>
-              <Input type="email" {...register('guest_email')} />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>{t('guests.country')}</Label>
-            <Input {...register('guest_country')} />
-          </div>
-
-          {/* Payment method */}
-          <div className="space-y-1.5">
-            <Label>{t('bookings.payment.method')}</Label>
-            <Controller
-              name="payment_method"
-              control={control}
-              render={({ field }) => (
-                <Select value={field.value || undefined} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="—" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_METHODS.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {t(`bookings.payment.${m}`, m)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <Label>{t('bookings.notes')}</Label>
-            <Input {...register('notes')} />
-          </div>
-
-          <SheetFooter>
-            <Button type="submit" disabled={isSubmitting || createMutation.isPending}>
-              {createMutation.isPending ? t('common.loading') : t('common.save')}
-            </Button>
-          </SheetFooter>
-        </form>
-      </SheetContent>
-    </Sheet>
   );
 }
 
@@ -499,14 +245,80 @@ function RecordPaymentDialog({
   );
 }
 
+/* ── Cancel Booking Dialog ───────────────────── */
+
+function CancelBookingDialog({
+  open,
+  onOpenChange,
+  booking,
+  reason,
+  onReasonChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  booking: Booking | null;
+  reason: string;
+  onReasonChange: (v: string) => void;
+}) {
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
+
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelBooking(booking!.id, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      onOpenChange(false);
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t('bookings.cancelBooking')}</DialogTitle>
+          <DialogDescription>
+            {t('bookings.confirmCancel')}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-1.5">
+          <Label>{t('bookings.cancellationReason')}</Label>
+          <textarea
+            rows={3}
+            value={reason}
+            onChange={(e) => onReasonChange(e.target.value)}
+            placeholder={t('bookings.cancellationReasonPlaceholder')}
+            className="flex w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={cancelMutation.isPending}
+            onClick={() => cancelMutation.mutate()}
+          >
+            {cancelMutation.isPending
+              ? t('common.loading')
+              : t('bookings.cancelBooking')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /* ── Actions Dropdown ────────────────────────── */
 
 function BookingActions({
   booking,
   onRecordPayment,
+  onCancelBooking,
 }: {
   booking: Booking;
   onRecordPayment: (b: Booking) => void;
+  onCancelBooking: (b: Booking) => void;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -519,11 +331,6 @@ function BookingActions({
 
   const checkOutMutation = useMutation({
     mutationFn: () => checkOut(booking.id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
-  });
-
-  const cancelMutation = useMutation({
-    mutationFn: () => cancelBooking(booking.id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['bookings'] }),
   });
 
@@ -564,11 +371,7 @@ function BookingActions({
         {booking.status !== 'cancelled' && booking.status !== 'checked_out' && (
           <DropdownMenuItem
             variant="destructive"
-            onClick={() => {
-              if (window.confirm(t('bookings.confirmCancel'))) {
-                cancelMutation.mutate();
-              }
-            }}
+            onClick={() => onCancelBooking(booking)}
           >
             <XCircle className="mr-2 h-4 w-4" />
             {t('bookings.cancelBooking')}
@@ -583,10 +386,13 @@ function BookingActions({
 
 export default function BookingsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [filters, setFilters] = useState<BookingFilters>({});
   const [sheetOpen, setSheetOpen] = useState(false);
   const [paymentBooking, setPaymentBooking] = useState<Booking | null>(null);
+  const [cancelBookingTarget, setCancelBookingTarget] = useState<Booking | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['bookings', filters],
@@ -598,7 +404,7 @@ export default function BookingsPage() {
   function updateFilter(key: keyof BookingFilters, value: string) {
     setFilters((prev) => {
       const next = { ...prev };
-      if (value && value !== '__all__') {
+      if (value && value !== 'all') {
         next[key] = value;
       } else {
         delete next[key];
@@ -623,14 +429,14 @@ export default function BookingsPage() {
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">{t('common.status')}</Label>
           <Select
-            value={filters.status ?? '__all__'}
+            value={filters.status ?? 'all'}
             onValueChange={(v) => updateFilter('status', v ?? '')}
           >
             <SelectTrigger className="w-[140px]">
-              <SelectValue />
+              <SelectValue placeholder={t('common.all')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">{t('common.all')}</SelectItem>
+              <SelectItem value="all">{t('common.all')}</SelectItem>
               {STATUSES.map((s) => (
                 <SelectItem key={s} value={s}>
                   {t(`bookings.status.${s}`, s)}
@@ -643,14 +449,14 @@ export default function BookingsPage() {
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">{t('bookings.source')}</Label>
           <Select
-            value={filters.source ?? '__all__'}
+            value={filters.source ?? 'all'}
             onValueChange={(v) => updateFilter('source', v ?? '')}
           >
             <SelectTrigger className="w-[140px]">
-              <SelectValue />
+              <SelectValue placeholder={t('common.all')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">{t('common.all')}</SelectItem>
+              <SelectItem value="all">{t('common.all')}</SelectItem>
               {SOURCES.map((s) => (
                 <SelectItem key={s} value={s}>
                   {t(`bookings.source_labels.${s}`, s)}
@@ -715,7 +521,7 @@ export default function BookingsPage() {
               </TableRow>
             ) : (
               bookings.map((b) => (
-                <TableRow key={b.id}>
+                <TableRow key={b.id} className="cursor-pointer hover:bg-muted/50" onClick={() => navigate(`/bookings/${b.id}`)}>
                   <TableCell className="font-medium">{b.guest_name}</TableCell>
                   <TableCell>{b.room_name}</TableCell>
                   <TableCell><DateDisplay date={b.check_in} /></TableCell>
@@ -727,6 +533,11 @@ export default function BookingsPage() {
                       <StatusBadge status={b.status} />
                       <PaymentBadge status={b.payment_status} />
                     </div>
+                    {b.status === 'cancelled' && (
+                      <span className="text-xs text-destructive">
+                        <DateDisplay date={b.updated_at} />
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     <CurrencyDisplay amount={b.total_price_gel} />
@@ -734,10 +545,11 @@ export default function BookingsPage() {
                   <TableCell className="text-right">
                     <CurrencyDisplay amount={b.paid_amount_gel} />
                   </TableCell>
-                  <TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
                     <BookingActions
                       booking={b}
                       onRecordPayment={(bk) => setPaymentBooking(bk)}
+                      onCancelBooking={(bk) => setCancelBookingTarget(bk)}
                     />
                   </TableCell>
                 </TableRow>
@@ -760,6 +572,20 @@ export default function BookingsPage() {
         open={!!paymentBooking}
         onOpenChange={(v) => { if (!v) setPaymentBooking(null); }}
         booking={paymentBooking}
+      />
+
+      {/* Cancel Booking Dialog */}
+      <CancelBookingDialog
+        open={!!cancelBookingTarget}
+        onOpenChange={(v) => {
+          if (!v) {
+            setCancelBookingTarget(null);
+            setCancelReason('');
+          }
+        }}
+        booking={cancelBookingTarget}
+        reason={cancelReason}
+        onReasonChange={setCancelReason}
       />
     </div>
   );

@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import {
   Copy,
@@ -223,15 +223,12 @@ export default function ShareModal({ open, onClose }: ShareModalProps) {
   }, [data, qrUrl]);
 
   return (
-    <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md overflow-y-auto"
-      >
-        <SheetHeader>
-          <SheetTitle>{t('share.title')}</SheetTitle>
-          <SheetDescription>{t('share.subtitle')}</SheetDescription>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={(o: boolean) => { if (!o) onClose(); }}>
+      <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t('share.title')}</DialogTitle>
+          <DialogDescription>{t('share.subtitle')}</DialogDescription>
+        </DialogHeader>
 
         {isLoading || !data ? (
           <div className="flex flex-col gap-4 p-4">
@@ -426,7 +423,7 @@ export default function ShareModal({ open, onClose }: ShareModalProps) {
             </section>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

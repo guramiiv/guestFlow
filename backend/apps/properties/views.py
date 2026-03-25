@@ -4,6 +4,7 @@ import cloudinary.uploader
 import qrcode
 from django.http import HttpResponse
 from rest_framework import generics, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
@@ -57,6 +58,27 @@ class RoomViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         prop = Property.objects.filter(owner=self.request.user).first()
         serializer.save(property=prop)
+
+    @action(detail=True, methods=['get'])
+    def availability(self, request, pk=None):
+        """Check if a room is available for the given date range."""
+        from apps.bookings.models import Booking
+
+        room = self.get_object()
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        if not start_date or not end_date:
+            return Response(
+                {'detail': 'start_date and end_date are required.'},
+                status=400,
+            )
+        available, occupied_dates = Booking.check_availability(
+            room.id, start_date, end_date
+        )
+        return Response({
+            'available': available,
+            'occupied_dates': [str(d) for d in occupied_dates],
+        })
 
 
 class PhotoUploadView(APIView):
@@ -379,11 +401,10 @@ class SitemapView(APIView):
             '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">',
         ]
 
-        # Static pages
+        # Static pages (only publicly crawlable pages; /login & /register are
+        # Disallow-ed in robots.txt so must not appear here)
         static_pages = [
             ('/', '1.0', 'weekly'),
-            ('/login', '0.3', 'monthly'),
-            ('/register', '0.3', 'monthly'),
         ]
         for path, priority, freq in static_pages:
             lines.append('  <url>')
@@ -429,16 +450,15 @@ class RobotsTxtView(APIView):
     def get(self, request):
         content = (
             'User-agent: *\n'
-            'Allow: /\n'
-            'Allow: /book/\n'
-            '\n'
             'Disallow: /dashboard/\n'
             'Disallow: /api/\n'
             'Disallow: /admin/\n'
             'Disallow: /login\n'
             'Disallow: /register\n'
             'Disallow: /settings/\n'
+            'Allow: /book/\n'
+            'Allow: /\n'
             '\n'
             'Sitemap: https://guestflow.ge/sitemap.xml\n'
         )
-        return HttpResponse(content, content_type='text/plain')
+        return HttpResponse(content, content_type='text/plain; charset=utf-8')

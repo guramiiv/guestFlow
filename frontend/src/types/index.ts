@@ -59,6 +59,7 @@ export interface Property {
   tax_id: string;
   amenities: string[];
   photos: string[];
+  banner_photo: string;
   plan: string;
   is_active: boolean;
   rooms: Room[];
@@ -89,6 +90,7 @@ export interface Booking {
   guest_country: string;
   notes: string;
   guest_message: string;
+  cancellation_reason: string;
   created_at: string;
   updated_at: string;
 }

@@ -37,14 +37,17 @@ export default function PublicLayout() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white shadow-sm">
         <div className="mx-auto flex max-w-[1200px] items-center justify-between px-4 py-3">
-          <h1
-            className="truncate text-lg font-bold sm:text-xl"
-            style={{ color: '#0D2137' }}
+          <a
+            href={slug ? `/book/${slug}` : '#'}
+            className="truncate text-lg font-bold sm:text-xl hover:opacity-80 transition-opacity"
+            style={{ color: '#0D2137', textDecoration: 'none' }}
+            role="heading"
+            aria-level={2}
           >
             {displayName}
-          </h1>
+          </a>
 
-          <div className="flex items-center gap-1">
+          <nav aria-label="Language selector" className="flex items-center gap-1">
             {LANGUAGES.map(({ code, label }) => (
               <button
                 key={code}
@@ -56,6 +59,8 @@ export default function PublicLayout() {
                     return next;
                   });
                 }}
+                aria-label={`Switch language to ${code === 'ka' ? 'Georgian' : code === 'en' ? 'English' : 'Russian'}`}
+                aria-current={i18n.language === code ? 'true' : undefined}
                 className="rounded-full px-3 py-2 text-xs font-medium transition-colors sm:px-3 sm:py-1"
                 style={{
                   minHeight: '44px',
@@ -68,7 +73,7 @@ export default function PublicLayout() {
                 {label}
               </button>
             ))}
-          </div>
+          </nav>
         </div>
       </header>
 
@@ -93,8 +98,8 @@ export default function PublicLayout() {
           {(phone || whatsapp) && (
             <div className="flex items-center gap-4" style={{ color: '#2C3E50' }}>
               {phone && (
-                <a href={`tel:${phone}`} className="flex items-center gap-1 py-2 hover:underline" style={{ minHeight: '44px' }}>
-                  <Phone size={14} />
+                <a href={`tel:${phone}`} aria-label={`Call ${displayName}: ${phone}`} className="flex items-center gap-1 py-2 hover:underline" style={{ minHeight: '44px' }}>
+                  <Phone size={14} aria-hidden="true" />
                   <span>{phone}</span>
                 </a>
               )}
@@ -103,10 +108,11 @@ export default function PublicLayout() {
                   href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label={`Contact ${displayName} on WhatsApp`}
                   className="flex items-center gap-1 py-2 hover:underline"
                   style={{ minHeight: '44px' }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
                     <path d="M12 0C5.373 0 0 5.373 0 12c0 2.11.546 4.093 1.503 5.818L.036 23.573c-.066.245.015.507.21.661.142.112.316.166.49.166.057 0 .114-.007.17-.022l5.903-1.526A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818c-1.855 0-3.63-.508-5.186-1.471l-.372-.23-3.507.907.892-3.434-.248-.393A9.78 9.78 0 012.182 12c0-5.414 4.404-9.818 9.818-9.818S21.818 6.586 21.818 12 17.414 21.818 12 21.818z" />
                   </svg>

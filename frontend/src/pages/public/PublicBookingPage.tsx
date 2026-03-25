@@ -29,6 +29,9 @@ import {
   MapPin,
   Search,
   Loader2,
+  Clock,
+  Camera,
+  Star,
 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { getPublicProperty, checkAvailability, getSeoData } from '@/api/public';
@@ -40,6 +43,7 @@ import Breadcrumb from '@/components/seo/Breadcrumb';
 import AvailableRoomsList from '@/components/public/AvailableRoomsList';
 import BookingForm from '@/components/public/BookingForm';
 import BookingConfirmation from '@/components/public/BookingConfirmation';
+import PhotoGalleryModal from '@/components/public/PhotoGalleryModal';
 
 type BookingStep = 'search' | 'results' | 'booking' | 'confirmation';
 
@@ -79,6 +83,9 @@ export default function PublicBookingPage() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+  const [galleryRoomName, setGalleryRoomName] = useState('');
+  const [galleryInitialIndex, setGalleryInitialIndex] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   // Selected room for booking step
@@ -208,46 +215,56 @@ export default function PublicBookingPage() {
 
       {/* ══════ HERO ══════ */}
       <section
-        className="relative flex items-end h-[200px] sm:h-[300px] md:h-[400px]"
+        className="relative flex items-end h-[220px] sm:h-[320px] md:h-[420px]"
+        role="img"
+        aria-label={`${property.name_en || property.name_ka} - ${property.city}, ${t(`regions.${property.region}`)} accommodation`}
         style={
-          property.photos?.[0]
-            ? { backgroundImage: `url(${property.photos[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+          (property.banner_photo || property.photos?.[0])
+            ? { backgroundImage: `url(${property.banner_photo || property.photos[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
             : { background: 'linear-gradient(135deg, #0D2137 0%, #117A65 100%)' }
         }
       >
         {/* dark overlay */}
-        <div className="absolute inset-0 bg-black/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
         <div className="relative z-10 mx-auto w-full max-w-[1200px] px-4 pb-14 sm:pb-20">
           <span
-            className="mb-2 inline-block rounded-full px-3 py-1 text-xs font-medium text-white"
-            style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}
+            className="mb-2 inline-block rounded-full px-3 py-1 text-xs font-medium text-white backdrop-blur-sm"
+            style={{ backgroundColor: 'rgba(17,122,101,0.6)' }}
           >
-            {property.property_type}
+            <Star size={12} className="mr-1 inline" aria-hidden="true" />
+            {t(`settings.propertyTypes.${property.property_type}`, property.property_type)}
           </span>
-          <h2 className="text-xl font-bold text-white sm:text-2xl md:text-4xl">{property.name_ka}</h2>
+          <h1 className="text-2xl font-bold text-white sm:text-3xl md:text-5xl drop-shadow-lg">
+            <span lang="ka">{property.name_ka}</span>
+            {property.name_en && property.name_ka !== property.name_en && (
+              <span className="sr-only"> ({property.name_en})</span>
+            )}
+          </h1>
           {property.name_en && property.name_ka !== property.name_en && (
-            <p className="mt-1 text-base text-white/80 sm:text-lg">{property.name_en}</p>
+            <p className="mt-1 text-base text-white/80 sm:text-lg drop-shadow" lang="en" aria-hidden="true">{property.name_en}</p>
           )}
-          <p className="mt-2 text-sm text-white/70">
-            <MapPin size={14} className="mr-1 inline" />
+          <p className="mt-2 text-sm text-white/80">
+            <MapPin size={14} className="mr-1 inline" aria-hidden="true" />
             {property.city}, {t(`regions.${property.region}`)}
           </p>
         </div>
       </section>
 
       {/* ══════ SEARCH CARD ══════ */}
-      <section className="mx-auto max-w-[900px] px-4" style={{ marginTop: '-40px', position: 'relative', zIndex: 20 }}>
-        <div className="rounded-xl bg-white p-4 shadow-lg sm:p-6">
+      <search className="mx-auto max-w-[900px] px-4" style={{ marginTop: '-40px', position: 'relative', zIndex: 20 }}>
+        <div className="rounded-xl bg-white p-4 shadow-lg sm:p-6" role="search" aria-label="Search available rooms">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
             {/* Check-in */}
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium" style={{ color: '#2C3E50' }}>
+              <label htmlFor="check-in-date" className="mb-1 block text-xs font-medium" style={{ color: '#2C3E50' }}>
                 {t('public.checkIn')}
               </label>
               <input
+                id="check-in-date"
                 type="date"
                 value={checkIn}
                 min={todayStr}
+                aria-label="Check-in date"
                 onChange={(e) => {
                   setCheckIn(e.target.value);
                   if (e.target.value >= checkOut) {
@@ -261,13 +278,15 @@ export default function PublicBookingPage() {
 
             {/* Check-out */}
             <div className="flex-1">
-              <label className="mb-1 block text-xs font-medium" style={{ color: '#2C3E50' }}>
+              <label htmlFor="check-out-date" className="mb-1 block text-xs font-medium" style={{ color: '#2C3E50' }}>
                 {t('public.checkOut')}
               </label>
               <input
+                id="check-out-date"
                 type="date"
                 value={checkOut}
                 min={checkIn || todayStr}
+                aria-label="Check-out date"
                 onChange={(e) => setCheckOut(e.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2"
                 style={{ '--tw-ring-color': '#117A65', minHeight: '44px' } as React.CSSProperties}
@@ -276,12 +295,14 @@ export default function PublicBookingPage() {
 
             {/* Guests */}
             <div className="w-full sm:w-32">
-              <label className="mb-1 block text-xs font-medium" style={{ color: '#2C3E50' }}>
+              <label htmlFor="guest-count" className="mb-1 block text-xs font-medium" style={{ color: '#2C3E50' }}>
                 {t('public.guests')}
               </label>
               <select
+                id="guest-count"
                 value={guests}
                 onChange={(e) => setGuests(Number(e.target.value))}
+                aria-label="Number of guests"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-base sm:text-sm focus:outline-none focus:ring-2"
                 style={{ '--tw-ring-color': '#117A65', minHeight: '44px' } as React.CSSProperties}
               >
@@ -297,23 +318,24 @@ export default function PublicBookingPage() {
             <button
               onClick={handleSearch}
               disabled={searching || !checkIn || !checkOut}
+              aria-label="Search available rooms"
               className="flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-base font-bold text-white transition-opacity disabled:opacity-50 sm:w-auto sm:min-w-[180px] sm:text-sm"
               style={{ backgroundColor: '#117A65', minHeight: '44px' } as React.CSSProperties}
             >
               {searching ? (
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" aria-hidden="true" />
               ) : (
-                <Search size={16} />
+                <Search size={16} aria-hidden="true" />
               )}
               {t('public.searchRooms')}
             </button>
           </div>
 
           {searchError && (
-            <p className="mt-3 text-sm" style={{ color: '#E74C3C' }}>{searchError}</p>
+            <p className="mt-3 text-sm" role="alert" style={{ color: '#E74C3C' }}>{searchError}</p>
           )}
         </div>
-      </section>
+      </search>
 
       {/* ══════ RESULTS (shown after search) ══════ */}
       {(step === 'results' || searching) && (
@@ -323,6 +345,11 @@ export default function PublicBookingPage() {
             nights={availableRooms[0]?.nights ?? 0}
             onSelectRoom={handleSelectRoom}
             isLoading={searching}
+            onViewPhotos={(photos, name, idx) => {
+              setGalleryPhotos(photos);
+              setGalleryRoomName(name);
+              setGalleryInitialIndex(idx);
+            }}
           />
         </section>
       )}
@@ -349,97 +376,185 @@ export default function PublicBookingPage() {
 
       {/* ══════ BOOKING CONFIRMATION ══════ */}
       {step === 'confirmation' && confirmation && property && (
-        <BookingConfirmation confirmation={confirmation} property={property} />
+        <BookingConfirmation
+          confirmation={confirmation}
+          property={property}
+          onBackToProperty={() => {
+            setStep('search');
+            setConfirmation(null);
+            setSelectedRoom(null);
+            setAvailableRooms([]);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        />
       )}
 
       {/* ══════ PROPERTY DETAILS (hide on confirmation) ══════ */}
       {step !== 'confirmation' && (
-      <section className="mx-auto mt-10 max-w-[1200px] px-4 pb-10">
+      <article className="mx-auto mt-10 max-w-[1200px] px-4 pb-10" itemScope itemType="https://schema.org/LodgingBusiness">
+        <meta itemProp="name" content={property.name_en || property.name_ka} />
+
+        {/* Quick Info Bar */}
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {property.check_in_time && (
+            <div className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: '#E8F5F1' }}>
+                <Clock size={18} style={{ color: '#117A65' }} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: '#888' }}>{t('public.checkIn')}</p>
+                <p className="text-sm font-semibold" style={{ color: '#0D2137' }}>{property.check_in_time}</p>
+              </div>
+            </div>
+          )}
+          {property.check_out_time && (
+            <div className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: '#FEF3E2' }}>
+                <Clock size={18} style={{ color: '#F39C12' }} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: '#888' }}>{t('public.checkOut')}</p>
+                <p className="text-sm font-semibold" style={{ color: '#0D2137' }}>{property.check_out_time}</p>
+              </div>
+            </div>
+          )}
+          {property.rooms?.length > 0 && (
+            <div className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: '#EDE8F5' }}>
+                <BedDouble size={18} style={{ color: '#7D3C98' }} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: '#888' }}>{t('rooms.title')}</p>
+                <p className="text-sm font-semibold" style={{ color: '#0D2137' }}>{property.rooms.length}</p>
+              </div>
+            </div>
+          )}
+          {(property.phone || property.whatsapp) && (
+            <div className="flex items-center gap-3 rounded-xl border bg-white p-3 shadow-sm">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg" style={{ backgroundColor: '#E3F2FD' }}>
+                <Phone size={18} style={{ color: '#2196F3' }} aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-xs" style={{ color: '#888' }}>{t('public.contactProperty')}</p>
+                <p className="text-sm font-semibold truncate" style={{ color: '#0D2137' }}>{property.phone || property.whatsapp}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Description */}
         {description && (
-          <div className="mb-8">
-            <p className="text-sm leading-relaxed" style={{ color: '#2C3E50' }}>{description}</p>
-          </div>
+          <section className="mb-8 rounded-xl border bg-white p-5 shadow-sm">
+            <p className="text-sm leading-relaxed" style={{ color: '#2C3E50', lineHeight: '1.8' }} itemProp="description">{description}</p>
+          </section>
         )}
 
         {/* Amenities */}
         {property.amenities?.length > 0 && (
-          <div className="mb-8">
-            <h3 className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
+          <section className="mb-8" aria-labelledby="amenities-heading">
+            <h2 id="amenities-heading" className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
               {t('public.amenities')}
-            </h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+            </h2>
+            <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" role="list">
               {property.amenities.map((amenity) => {
                 const Icon = AMENITY_ICONS[amenity] || BedDouble;
                 return (
-                  <div key={amenity} className="flex items-center gap-2 rounded-lg border p-3" style={{ minHeight: '44px' }}>
-                    <Icon size={18} style={{ color: '#117A65' }} />
+                  <li key={amenity} className="flex items-center gap-2 rounded-xl border bg-white p-3 shadow-sm transition-shadow hover:shadow-md" style={{ minHeight: '44px' }}>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg" style={{ backgroundColor: '#E8F5F1' }}>
+                      <Icon size={16} style={{ color: '#117A65' }} aria-hidden="true" />
+                    </div>
                     <span className="text-sm" style={{ color: '#2C3E50' }}>
                       {t(`public.amenityLabels.${amenity}`, amenity)}
                     </span>
-                  </div>
+                  </li>
                 );
               })}
-            </div>
-          </div>
+            </ul>
+          </section>
         )}
 
         {/* House Rules */}
         {houseRules && (
-          <div className="mb-8">
+          <section className="mb-8">
             <button
               onClick={() => setRulesExpanded(!rulesExpanded)}
-              className="flex w-full items-center justify-between rounded-lg border p-4 text-left"
+              aria-expanded={rulesExpanded}
+              className="flex w-full items-center justify-between rounded-xl border bg-white p-4 text-left shadow-sm transition-shadow hover:shadow-md"
               style={{ minHeight: '48px' }}
             >
-              <span className="font-bold" style={{ color: '#0D2137' }}>
+              <h2 className="font-bold text-lg" style={{ color: '#0D2137' }}>
                 {t('public.houseRules')}
-              </span>
-              {rulesExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </h2>
+              {rulesExpanded ? <ChevronUp size={18} aria-hidden="true" /> : <ChevronDown size={18} aria-hidden="true" />}
             </button>
             {rulesExpanded && (
-              <div className="rounded-b-lg border border-t-0 p-4">
+              <div className="rounded-b-xl border border-t-0 bg-white p-4 shadow-sm">
                 <p className="whitespace-pre-line text-sm" style={{ color: '#2C3E50' }}>{houseRules}</p>
               </div>
             )}
-          </div>
+          </section>
         )}
 
-        {/* Location */}
-        <div className="mb-8">
-          <h3 className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
+        {/* Location + Google Maps */}
+        <section className="mb-8" aria-labelledby="location-heading">
+          <h2 id="location-heading" className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
             {t('public.location')}
-          </h3>
-          <div className="flex items-start gap-2 text-sm" style={{ color: '#2C3E50' }}>
-            <MapPin size={16} className="mt-0.5 shrink-0" style={{ color: '#117A65' }} />
-            <div>
-              {address && <p>{address}</p>}
-              <p>{property.city}, {t(`regions.${property.region}`)}</p>
-              {property.latitude && property.longitude && (
-                <a
-                  href={`https://www.google.com/maps?q=${property.latitude},${property.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-block underline"
-                  style={{ color: '#117A65' }}
-                >
-                  View on Google Maps
-                </a>
-              )}
+          </h2>
+          <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+            {/* Google Maps embed */}
+            {property.latitude && property.longitude && (
+              <div className="h-[250px] sm:h-[300px]">
+                <iframe
+                  title={`${property.name_en || property.name_ka} location`}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://maps.google.com/maps?q=${property.latitude},${property.longitude}&z=15&output=embed`}
+                  allowFullScreen
+                />
+              </div>
+            )}
+            <div className="flex items-start gap-3 p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ backgroundColor: '#E8F5F1' }}>
+                <MapPin size={18} style={{ color: '#117A65' }} aria-hidden="true" />
+              </div>
+              <address itemProp="address" itemScope itemType="https://schema.org/PostalAddress" className="not-italic text-sm" style={{ color: '#2C3E50' }}>
+                {address && <span itemProp="streetAddress">{address}</span>}
+                {address && ', '}
+                <span itemProp="addressLocality">{property.city}</span>,{' '}
+                <span itemProp="addressRegion">{t(`regions.${property.region}`)}</span>,{' '}
+                <span itemProp="addressCountry">საქართველო</span>
+                {property.latitude && property.longitude && (
+                  <a
+                    href={`https://www.google.com/maps?q=${property.latitude},${property.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`View ${property.name_en || property.name_ka} on Google Maps`}
+                    className="ml-2 inline-flex items-center gap-1 font-medium underline"
+                    style={{ color: '#117A65' }}
+                  >
+                    {t('public.viewOnMap')} →
+                  </a>
+                )}
+              </address>
             </div>
           </div>
-        </div>
+        </section>
 
         {/* Contact */}
-        <div className="mb-8">
-          <h3 className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
+        <section className="mb-8" aria-labelledby="contact-heading">
+          <h2 id="contact-heading" className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
             {t('public.contactProperty')}
-          </h3>
-          <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
+          </h2>
+          <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
             {property.phone && (
-              <a href={`tel:${property.phone}`} className="flex items-center gap-2 text-sm hover:underline" style={{ color: '#2C3E50' }}>
-                <Phone size={16} style={{ color: '#117A65' }} />
-                {property.phone}
+              <a href={`tel:${property.phone}`} aria-label={`Call ${property.name_en || property.name_ka}: ${property.phone}`} className="flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md" style={{ color: '#2C3E50' }}>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: '#E8F5F1' }}>
+                  <Phone size={16} style={{ color: '#117A65' }} aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium">{property.phone}</span>
               </a>
             )}
             {property.whatsapp && (
@@ -447,69 +562,118 @@ export default function PublicBookingPage() {
                 href={`https://wa.me/${property.whatsapp.replace(/[^0-9]/g, '')}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 text-sm hover:underline"
+                aria-label={`Contact ${property.name_en || property.name_ka} on WhatsApp`}
+                className="flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md"
                 style={{ color: '#2C3E50' }}
               >
-                <Phone size={16} style={{ color: '#25D366' }} />
-                WhatsApp
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: '#E8F8E5' }}>
+                  <Phone size={16} style={{ color: '#25D366' }} aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium">WhatsApp</span>
               </a>
             )}
             {property.email && (
-              <a href={`mailto:${property.email}`} className="flex items-center gap-2 text-sm hover:underline" style={{ color: '#2C3E50' }}>
-                <Mail size={16} style={{ color: '#117A65' }} />
-                {property.email}
+              <a href={`mailto:${property.email}`} aria-label={`Email ${property.name_en || property.name_ka}: ${property.email}`} className="flex items-center gap-3 rounded-xl border bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md" style={{ color: '#2C3E50' }}>
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg" style={{ backgroundColor: '#E3F2FD' }}>
+                  <Mail size={16} style={{ color: '#2196F3' }} aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium">{property.email}</span>
               </a>
             )}
           </div>
-        </div>
+        </section>
 
         {/* All Rooms Preview (always visible before search) */}
         {step === 'search' && property.rooms?.length > 0 && (
-          <div>
-            <h3 className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
+          <section aria-labelledby="rooms-preview-heading">
+            <h2 id="rooms-preview-heading" className="mb-4 text-lg font-bold" style={{ color: '#0D2137' }}>
               {t('rooms.title')}
-            </h3>
+            </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {property.rooms.map((room) => (
-                <RoomPreviewCard key={room.id} room={room} lang={lang} t={t} />
+                <RoomPreviewCard
+                  key={room.id}
+                  room={room}
+                  lang={lang}
+                  t={t}
+                  propertyName={property.name_en || property.name_ka}
+                  onViewPhotos={(photos, name, idx) => {
+                    setGalleryPhotos(photos);
+                    setGalleryRoomName(name);
+                    setGalleryInitialIndex(idx);
+                  }}
+                  onCheckAvailability={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                />
               ))}
             </div>
-          </div>
+          </section>
         )}
-      </section>
+      </article>
+      )}
+
+      {/* ══════ Photo Gallery Modal ══════ */}
+      {galleryPhotos.length > 0 && (
+        <PhotoGalleryModal
+          photos={galleryPhotos}
+          initialIndex={galleryInitialIndex}
+          roomName={galleryRoomName}
+          onClose={() => setGalleryPhotos([])}
+        />
       )}
     </div>
   );
 }
 
-/* ═══════ Room Preview Card (no pricing) ═══════ */
+/* ═══════ Room Preview Card ═══════ */
 function RoomPreviewCard({
   room,
   lang,
   t,
+  propertyName,
+  onViewPhotos,
+  onCheckAvailability,
 }: {
   room: PublicRoom;
   lang: string;
   t: TFunction;
+  propertyName: string;
+  onViewPhotos: (photos: string[], roomName: string, index: number) => void;
+  onCheckAvailability: () => void;
 }) {
   const roomName = localized(room.name_ka, room.name_en, lang);
+  const roomNameEn = room.name_en || room.name_ka;
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+    <div className="overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md">
       {/* Photo or placeholder */}
       <div
-        className="flex h-40 items-center justify-center"
+        className="relative flex h-44 items-center justify-center cursor-pointer"
+        role="img"
+        aria-label={room.photos?.[0] ? `${roomNameEn} at ${propertyName}` : `${roomNameEn} - no photo available`}
         style={
           room.photos?.[0]
             ? { backgroundImage: `url(${room.photos[0]})`, backgroundSize: 'cover', backgroundPosition: 'center' }
             : { backgroundColor: '#F0F4F5' }
         }
+        onClick={() => {
+          if (room.photos?.length > 0) {
+            onViewPhotos(room.photos, roomNameEn, 0);
+          }
+        }}
       >
-        {!room.photos?.[0] && <BedDouble size={40} style={{ color: '#117A65', opacity: 0.3 }} />}
+        {!room.photos?.[0] && <BedDouble size={40} style={{ color: '#117A65', opacity: 0.3 }} aria-hidden="true" />}
+        {room.photos?.length > 1 && (
+          <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
+            <Camera size={12} aria-hidden="true" />
+            {room.photos.length}
+          </span>
+        )}
       </div>
 
       <div className="p-4">
-        <h4 className="font-bold" style={{ color: '#0D2137' }}>{roomName}</h4>
+        <h3 className="font-bold" style={{ color: '#0D2137' }}>{roomName}</h3>
         <div className="mt-1 flex items-center gap-3">
           <span
             className="inline-block rounded-full px-2 py-0.5 text-xs"
@@ -518,8 +682,8 @@ function RoomPreviewCard({
             {t(`public.roomTypes.${room.room_type}`, room.room_type)}
           </span>
           <span className="flex items-center gap-1 text-xs" style={{ color: '#666' }}>
-            <Users size={14} />
-            {room.max_guests}
+            <Users size={14} aria-hidden="true" />
+            <span className="sr-only">Max guests:</span> {room.max_guests}
           </span>
         </div>
 
@@ -529,19 +693,33 @@ function RoomPreviewCard({
             {room.amenities.slice(0, 6).map((a) => {
               const Icon = AMENITY_ICONS[a] || BedDouble;
               return (
-                <span key={a} title={t(`public.amenityLabels.${a}`, a)} className="rounded bg-gray-100 p-1">
-                  <Icon size={14} style={{ color: '#666' }} />
+                <span key={a} title={t(`public.amenityLabels.${a}`, a)} className="rounded-md bg-gray-50 p-1.5">
+                  <Icon size={14} style={{ color: '#666' }} aria-hidden="true" />
                 </span>
               );
             })}
           </div>
         )}
 
-        {/* Base price hint */}
-        <p className="mt-3 text-sm">
+        {/* Base price hint — machine-readable */}
+        <p className="mt-3 text-sm" itemScope itemType="https://schema.org/PriceSpecification">
+          <meta itemProp="priceCurrency" content="GEL" />
           <span style={{ color: '#888' }}>{t('public.perNight')}: </span>
-          <span className="font-bold" style={{ color: '#117A65' }}>₾{Number(room.effective_price_gel).toFixed(0)}</span>
+          <span className="text-lg font-bold" style={{ color: '#117A65' }} itemProp="price" content={String(Number(room.effective_price_gel).toFixed(0))}>
+            ₾{Number(room.effective_price_gel).toFixed(0)}
+          </span>
+          <meta itemProp="unitCode" content="DAY" />
         </p>
+
+        {/* Check Availability button */}
+        <button
+          onClick={onCheckAvailability}
+          aria-label={`${t('public.checkAvailability')} - ${roomNameEn}`}
+          className="mt-3 w-full rounded-lg py-2.5 text-sm font-bold text-white transition-opacity hover:opacity-90"
+          style={{ backgroundColor: '#117A65' }}
+        >
+          {t('public.checkAvailability')}
+        </button>
       </div>
     </div>
   );
