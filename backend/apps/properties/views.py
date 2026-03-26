@@ -10,8 +10,12 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Property, Room, SeasonalRate, ShareEvent
+from apps.core.mixins import TenantQuerySetMixin
+
+from .models import ChannelConnection, Property, Room, SeasonalRate, ShareEvent
 from .serializers import (
+    ChannelConnectionCreateSerializer,
+    ChannelConnectionSerializer,
     PropertySerializer,
     PropertyUpdateSerializer,
     RoomCreateSerializer,
@@ -40,24 +44,14 @@ class PropertyView(generics.RetrieveUpdateAPIView):
         return prop
 
 
-class RoomViewSet(viewsets.ModelViewSet):
+class RoomViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
     """CRUD for rooms, filtered by the current user's property."""
+    queryset = Room.objects.select_related('property').prefetch_related('seasonal_rates')
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
             return RoomCreateSerializer
         return RoomSerializer
-
-    def get_queryset(self):
-        return (
-            Room.objects.filter(property__owner=self.request.user)
-            .select_related('property')
-            .prefetch_related('seasonal_rates')
-        )
-
-    def perform_create(self, serializer):
-        prop = Property.objects.filter(owner=self.request.user).first()
-        serializer.save(property=prop)
 
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
@@ -81,15 +75,30 @@ class RoomViewSet(viewsets.ModelViewSet):
         })
 
 
+class ChannelConnectionViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
+    """CRUD for channel connections. Credentials are encrypted at rest and never returned."""
+    queryset = ChannelConnection.objects.select_related('property')
+
+    def get_serializer_class(self):
+        if self.action in ('create', 'update', 'partial_update'):
+            return ChannelConnectionCreateSerializer
+        return ChannelConnectionSerializer
+
+
 class PhotoUploadView(APIView):
     """Upload one or more images to Cloudinary. Returns list of secure URLs."""
 
     parser_classes = [MultiPartParser]
 
     def post(self, request):
+        from apps.core.validators import validate_image_upload
+
         files = request.FILES.getlist('files')
         if not files:
             return Response({'detail': 'No files provided.'}, status=400)
+
+        for f in files:
+            validate_image_upload(f)
 
         prop = Property.objects.filter(owner=request.user).first()
         if not prop:

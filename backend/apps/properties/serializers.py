@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from .models import Property, Room, SeasonalRate
+from apps.core.validators import normalize_email, sanitize_text, validate_phone
+from .models import ChannelConnection, Property, Room, SeasonalRate
 
 
 class SeasonalRateSerializer(serializers.ModelSerializer):
@@ -83,3 +84,54 @@ class PropertyUpdateSerializer(serializers.ModelSerializer):
             'check_in_time', 'check_out_time', 'house_rules_ka', 'house_rules_en',
             'tax_id', 'amenities', 'photos', 'banner_photo',
         )
+
+    def validate_phone(self, value):
+        return validate_phone(value)
+
+    def validate_whatsapp(self, value):
+        return validate_phone(value)
+
+    def validate_email(self, value):
+        return normalize_email(value)
+
+    def validate_description_ka(self, value):
+        return sanitize_text(value)
+
+    def validate_description_en(self, value):
+        return sanitize_text(value)
+
+    def validate_house_rules_ka(self, value):
+        return sanitize_text(value)
+
+    def validate_house_rules_en(self, value):
+        return sanitize_text(value)
+
+
+class ChannelConnectionSerializer(serializers.ModelSerializer):
+    """Read serializer — NEVER exposes api_key or api_secret."""
+    channel_display = serializers.CharField(source='get_channel_display', read_only=True)
+
+    class Meta:
+        model = ChannelConnection
+        fields = (
+            'id', 'channel', 'channel_display', 'property_external_id',
+            'sync_status', 'last_sync_at', 'created_at', 'updated_at',
+        )
+        read_only_fields = fields
+
+
+class ChannelConnectionCreateSerializer(serializers.ModelSerializer):
+    """Write serializer — accepts credentials but never returns them."""
+    api_key = serializers.CharField(write_only=True)
+    api_secret = serializers.CharField(write_only=True, required=False, default='')
+
+    class Meta:
+        model = ChannelConnection
+        fields = (
+            'id', 'channel', 'property_external_id',
+            'api_key', 'api_secret',
+        )
+        read_only_fields = ('id',)
+
+    def to_representation(self, instance):
+        return ChannelConnectionSerializer(instance).data

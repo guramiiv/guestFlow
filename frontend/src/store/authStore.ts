@@ -7,7 +7,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
 }
 
@@ -26,8 +26,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: response.user, isAuthenticated: true });
   },
 
-  logout: () => {
-    authApi.logout();
+  logout: async () => {
+    await authApi.logout();
     set({ user: null, isAuthenticated: false });
   },
 

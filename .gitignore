@@ -1,0 +1,41 @@
+# Environment & secrets
+.env
+.env.local
+.env.production
+*.pem
+*.key
+*.cert
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Django
+db.sqlite3
+media/
+staticfiles/
+
+# Node
+node_modules/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+
+# Logs
+*.log
+
+# OS
+Thumbs.db
+Desktop.ini

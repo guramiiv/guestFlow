@@ -17,8 +17,11 @@ export async function login(email: string, password: string): Promise<LoginRespo
 
 export async function refreshToken(): Promise<string> {
   const refresh = localStorage.getItem('refresh');
-  const response = await client.post<{ access: string }>('/auth/token/refresh/', { refresh });
+  const response = await client.post<{ access: string; refresh?: string }>('/auth/token/refresh/', { refresh });
   localStorage.setItem('access', response.data.access);
+  if (response.data.refresh) {
+    localStorage.setItem('refresh', response.data.refresh);
+  }
   return response.data.access;
 }
 
@@ -32,7 +35,15 @@ export async function updateMe(data: Partial<User>): Promise<User> {
   return response.data;
 }
 
-export function logout(): void {
+export async function logout(): Promise<void> {
+  const refresh = localStorage.getItem('refresh');
+  if (refresh) {
+    try {
+      await client.post('/auth/logout/', { refresh });
+    } catch {
+      // Blacklist call failed (token already expired/invalid) — continue with local cleanup
+    }
+  }
   localStorage.removeItem('access');
   localStorage.removeItem('refresh');
 }

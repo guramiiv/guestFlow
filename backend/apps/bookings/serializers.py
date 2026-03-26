@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from rest_framework import serializers
 
+from apps.core.validators import normalize_email, sanitize_text, validate_phone
 from .models import Booking, RoomNight
 from apps.guests.models import Guest
 from apps.properties.models import Property, Room, SeasonalRate
@@ -34,6 +35,26 @@ class BookingCreateSerializer(serializers.ModelSerializer):
             'notes', 'guest_message',
         )
         read_only_fields = ('id', 'num_nights')
+
+    def validate_room(self, value):
+        """Ensure the room belongs to the requesting user's property."""
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            if value.property.owner != request.user:
+                raise serializers.ValidationError("Room not found.")
+        return value
+
+    def validate_guest_phone(self, value):
+        return validate_phone(value)
+
+    def validate_guest_email(self, value):
+        return normalize_email(value)
+
+    def validate_notes(self, value):
+        return sanitize_text(value)
+
+    def validate_guest_message(self, value):
+        return sanitize_text(value)
 
     def validate(self, data):
         check_in = data.get('check_in')
@@ -147,6 +168,18 @@ class PublicBookingCreateSerializer(serializers.Serializer):
     guest_language = serializers.CharField(max_length=2, required=False, default='en')
     guest_message = serializers.CharField(required=False, default='')
     payment_method = serializers.ChoiceField(choices=[('bog_ipay', 'BOG iPay'), ('pay_at_property', 'Pay at Property')])
+
+    def validate_guest_phone(self, value):
+        return validate_phone(value)
+
+    def validate_guest_email(self, value):
+        return normalize_email(value)
+
+    def validate_guest_name(self, value):
+        return sanitize_text(value)
+
+    def validate_guest_message(self, value):
+        return sanitize_text(value)
 
     def validate(self, data):
         slug = self.context.get('slug')

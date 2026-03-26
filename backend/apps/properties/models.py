@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.utils.text import slugify
+from encrypted_model_fields.fields import EncryptedTextField
 
 
 class Property(models.Model):
@@ -165,3 +166,46 @@ class ShareEvent(models.Model):
 
     def __str__(self):
         return f'{self.property.name_ka} — {self.platform} ({self.created_at:%Y-%m-%d})'
+
+
+class ChannelConnection(models.Model):
+    """
+    Stores OTA channel API credentials for a property.
+    api_key and api_secret are encrypted at rest — never exposed in API responses.
+    """
+    CHANNEL_CHOICES = [
+        ('booking_com', 'Booking.com'),
+        ('airbnb', 'Airbnb'),
+        ('expedia', 'Expedia'),
+    ]
+
+    SYNC_STATUS_CHOICES = [
+        ('active', 'Active'),
+        ('paused', 'Paused'),
+        ('error', 'Error'),
+        ('pending', 'Pending Setup'),
+    ]
+
+    property = models.ForeignKey(
+        Property, on_delete=models.CASCADE, related_name='channel_connections'
+    )
+    channel = models.CharField(max_length=20, choices=CHANNEL_CHOICES)
+    property_external_id = models.CharField(
+        max_length=200, blank=True,
+        help_text='Property ID on the external channel platform',
+    )
+    api_key = EncryptedTextField(blank=True, default='')
+    api_secret = EncryptedTextField(blank=True, default='')
+    sync_status = models.CharField(
+        max_length=20, choices=SYNC_STATUS_CHOICES, default='pending'
+    )
+    last_sync_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['property', 'channel']
+        ordering = ['channel']
+
+    def __str__(self):
+        return f'{self.property.name_ka} — {self.get_channel_display()}'

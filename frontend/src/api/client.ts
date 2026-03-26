@@ -67,6 +67,9 @@ client.interceptors.response.use(
         { refresh: refreshToken },
       );
       localStorage.setItem('access', data.access);
+      if (data.refresh) {
+        localStorage.setItem('refresh', data.refresh);
+      }
       processQueue(null, data.access);
       originalRequest.headers.Authorization = `Bearer ${data.access}`;
       return client(originalRequest);

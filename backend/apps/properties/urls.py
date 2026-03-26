@@ -5,6 +5,7 @@ from . import views
 
 router = DefaultRouter()
 router.register(r'rooms', views.RoomViewSet, basename='room')
+router.register(r'channels', views.ChannelConnectionViewSet, basename='channel-connection')
 
 urlpatterns = [
     path('', views.PropertyView.as_view(), name='property-detail'),

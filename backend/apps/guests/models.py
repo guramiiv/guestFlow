@@ -1,4 +1,5 @@
 from django.db import models
+from encrypted_model_fields.fields import EncryptedCharField
 
 # Save builtin before the field name 'property' shadows it
 _property = property
@@ -25,7 +26,7 @@ class Guest(models.Model):
     id_type = models.CharField(
         max_length=20, choices=ID_TYPE_CHOICES, blank=True,
     )
-    id_number = models.CharField(max_length=50, blank=True)
+    id_number = EncryptedCharField(max_length=50, blank=True, default='')
     total_stays = models.PositiveIntegerField(default=0)
     total_spent_gel = models.DecimalField(
         max_digits=10, decimal_places=2, default=0,
@@ -43,3 +44,11 @@ class Guest(models.Model):
     @_property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+    @_property
+    def id_number_masked(self):
+        """Return masked ID number for list views: '****1234' or empty string."""
+        val = self.id_number or ''
+        if len(val) <= 4:
+            return val
+        return '*' * (len(val) - 4) + val[-4:]

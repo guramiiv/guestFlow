@@ -21,7 +21,22 @@
       "Bash(ls /c/Users/guiv01/Desktop/GuestFlow/.venv/bin/python*)",
       "Bash(/c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python.exe manage.py shell -c \":*)",
       "Bash(PYTHONIOENCODING=utf-8 /c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python.exe manage.py shell -c \":*)",
-      "Bash(PYTHONIOENCODING=utf-8 /c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python.exe seed_test_data.py)"
+      "Bash(PYTHONIOENCODING=utf-8 /c/Users/guiv01/Desktop/GuestFlow/.venv/Scripts/python.exe seed_test_data.py)",
+      "Bash(python manage.py test apps.core.tests.test_tenant_isolation -v2)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(python -c \"import axes; print\\(axes.__version__\\)\")",
+      "Bash(python manage.py test -v2)",
+      "Bash(pip freeze:*)",
+      "Bash(python -c \"from encrypted_model_fields.fields import EncryptedCharField, EncryptedTextField; print\\(''OK''\\)\")",
+      "Bash(python -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\")",
+      "Bash(python manage.py makemigrations)",
+      "Bash(python manage.py makemigrations core)",
+      "Bash(python manage.py test apps.core apps.guests apps.properties apps.bookings -v2)",
+      "Bash(python manage.py test apps.core.tests.test_data_encryption -v2)",
+      "Bash(python manage.py test apps -v2)",
+      "Bash(python -m pytest apps/core/tests/ -x -q)",
+      "Bash(python manage.py test apps.core.tests -v 2)"
     ]
   }
 }

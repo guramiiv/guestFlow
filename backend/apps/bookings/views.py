@@ -11,6 +11,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.core.mixins import TenantQuerySetMixin
+from apps.core.throttles import BookingCreateThrottle, PaymentThrottle
 from apps.properties.models import Property, Room, SeasonalRate
 
 from .models import Booking, RoomNight
@@ -29,11 +31,12 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-class BookingViewSet(viewsets.ModelViewSet):
+class BookingViewSet(TenantQuerySetMixin, viewsets.ModelViewSet):
     """
     CRUD for bookings. Every queryset is filtered by property__owner=request.user
     for multi-tenant security.
     """
+    queryset = Booking.objects.select_related('room', 'guest', 'property')
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -43,10 +46,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return BookingSerializer
 
     def get_queryset(self):
-        qs = (
-            Booking.objects.filter(property__owner=self.request.user)
-            .select_related('room', 'guest', 'property')
-        )
+        qs = super().get_queryset()
 
         # Filtering
         params = self.request.query_params
@@ -62,8 +62,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         return qs
 
     def perform_create(self, serializer):
-        prop = Property.objects.filter(owner=self.request.user).first()
-        guest_data = {}
+        prop = self.request.user.properties.first()
+        if not prop:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No property associated with this account.")
         guest_name = serializer.validated_data.get('guest_name', '')
         guest_phone = serializer.validated_data.get('guest_phone', '')
         guest_email = serializer.validated_data.get('guest_email', '')
@@ -124,7 +126,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.cancel(reason=reason)
         return Response(BookingSerializer(booking).data)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], throttle_classes=[PaymentThrottle])
     def record_payment(self, request, pk=None):
         booking = self.get_object()
         serializer = RecordPaymentSerializer(data=request.data)
@@ -262,6 +264,7 @@ class PublicAvailabilityView(APIView):
 
 class PublicCreateBookingView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [BookingCreateThrottle]
 
     def post(self, request, slug):
         serializer = PublicBookingCreateSerializer(
