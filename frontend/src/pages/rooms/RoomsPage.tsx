@@ -51,13 +51,21 @@ import { Separator } from '@/components/ui/separator';
 const ROOM_TYPES = ['single', 'double', 'twin', 'family', 'suite', 'dorm'];
 
 const AMENITY_OPTIONS = [
-  'WiFi',
-  'პარკინგი',
-  'კონდიციონერი',
-  'აივანი',
-  'სამზარეულო',
-  'TV',
-  'მინიბარი',
+  'wifi',
+  'parking',
+  'ac',
+  'balcony',
+  'kitchen',
+  'tv',
+  'minibar',
+  'heating',
+  'washer',
+  'pool',
+  'garden',
+  'bbq',
+  'breakfast',
+  'airport_transfer',
+  'pet_friendly',
 ];
 
 const seasonalRateSchema = z.object({
@@ -336,7 +344,7 @@ function RoomFormSheet({
                         : 'border-border text-muted-foreground hover:bg-muted'
                     }`}
                   >
-                    {amenity}
+                    {t(`public.amenityLabels.${amenity}`, amenity)}
                   </button>
                 );
               })}
